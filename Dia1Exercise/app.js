@@ -30,11 +30,6 @@ app.get(`/campers/count`, (req, res) => {
     return res.status(200).json({ total: campers.length });
 });
 
-app.get('/mensajePersonalizado/:nombre', (req, res) => {
-    const nombre = req.params.nombre;
-    res.send(`¡Hola ${nombre}!`);
-});
-
 app.get(`/campers/:id`, (req, res) => {
     const id = Number(req.params.id);
     let camper = undefined;
@@ -130,7 +125,7 @@ app.post(`/campers`, (req, res) => {
         };
 
         if (Number.isInteger(jornada) && (jornada < 1 || jornada > 4)) {
-            return res.status(400).json({ error: `request inválida (jornada inválida [válidas: 1, 2, 3, 4])` });
+            return res.status(400).json({ error: `request inválida (jornada inválida; válidas: 1, 2, 3, 4)` });
         } else if (!Number.isInteger(jornada)) {
             return res.status(400).json({ error: `request inválida ('jornada' de tipo no entero)` });
         };
@@ -232,8 +227,26 @@ app.post(`/campers`, (req, res) => {
                 campers.push(newCamper);
 
                 return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+            } else {
+                return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
             };
-        } else if (!isPlainObject(acudiente)) {
+        } else if (acudiente == null) {
+            const newCamper = {
+                id: campersNextId++,
+                estado: `En proceso de ingreso`,
+                riesgo: `Bajo`,
+                nombres: nombres,
+                apellidos: apellidos,
+                direccion: direccion,
+                telefono: telefono,
+                acudiente: {},
+                jornada: jornada
+            };
+
+            campers.push(newCamper);
+
+            return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+        } else {
             return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
         };
     } else if (bodyKeys.length < 6 && onlyAllowedKeys(cleanBody, bodyExpectedKeys)) {
@@ -284,58 +297,165 @@ app.post(`/campers`, (req, res) => {
 
             const attendantKeys = Object.keys(cleanAttendant);
 
-            if (cleanAttendant.nombres != null) {
+            if (attendantKeys.length === 3 && attendantExpectedKeys.every(k => attendantKeys.includes(k))) {
                 if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
                     return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
                 } else if (typeof cleanAttendant.nombres !== `string`) {
                     return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
                 };
-            };
 
-            if (cleanAttendant.apellidos != null) {
                 if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
                     return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                 } else if (typeof cleanAttendant.apellidos !== `string`) {
                     return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
                 };
-            };
 
-            if (cleanAttendant.telefono != null) {
                 if (typeof cleanAttendant.telefono === `string` && !/^3[0-9]{9}$/.test(cleanAttendant.telefono)) {
                     return res.status(400).json({ error: `request inválida (formato inválido en 'acudiente.telefono')` });
                 } else if (typeof cleanAttendant.telefono !== `string`) {
                     return res.status(400).json({ error: `request inválida ('acudiente.telefono' de tipo no string)` });
                 };
-            };
 
+                const newCamper = {
+                    id: campersNextId++,
+                    estado: `En proceso de ingreso`,
+                    riesgo: `Bajo`,
+                    acudiente: {
+                        nombres: acudiente.nombres,
+                        apellidos: acudiente.apellidos,
+                        telefono: acudiente.telefono
+                    }
+                };
+
+                if (nombres != null) {
+                    newCamper.nombres = nombres;
+                };
+
+                if (apellidos != null) {
+                    newCamper.apellidos = apellidos;
+                };
+
+                if (direccion != null) {
+                    newCamper.direccion = direccion;
+                };
+
+                if (telefono != null) {
+                    newCamper.telefono = telefono;
+                };
+
+                if (jornada != null) {
+                    newCamper.jornada = jornada;
+                };
+
+                campers.push(newCamper);
+
+                return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+            } else if (attendantKeys.length < 3 && onlyAllowedKeys(cleanAttendant, attendantExpectedKeys)) {
+                if (cleanAttendant.nombres != null) {
+                    if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
+                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
+                    } else if (typeof cleanAttendant.nombres !== `string`) {
+                        return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
+                    };
+                };
+
+                if (cleanAttendant.apellidos != null) {
+                    if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
+                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
+                    } else if (typeof cleanAttendant.apellidos !== `string`) {
+                        return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
+                    };
+                };
+
+                if (cleanAttendant.telefono != null) {
+                    if (typeof cleanAttendant.telefono === `string` && !/^3[0-9]{9}$/.test(cleanAttendant.telefono)) {
+                        return res.status(400).json({ error: `request inválida (formato inválido en 'acudiente.telefono')` });
+                    } else if (typeof cleanAttendant.telefono !== `string`) {
+                        return res.status(400).json({ error: `request inválida ('acudiente.telefono' de tipo no string)` });
+                    };
+                };
+
+                const newCamper = {
+                    id: campersNextId++,
+                    estado: `En proceso de ingreso`,
+                    riesgo: `Bajo`,
+                    acudiente: {}
+                };
+
+                if (nombres != null) {
+                    newCamper.nombres = nombres;
+                };
+
+                if (apellidos != null) {
+                    newCamper.apellidos = apellidos;
+                };
+
+                if (direccion != null) {
+                    newCamper.direccion = direccion;
+                };
+
+                if (telefono != null) {
+                    newCamper.telefono = telefono;
+                };
+
+                if (acudiente.nombres != null) {
+                    newCamper.acudiente.nombres = acudiente.nombres;
+                };
+
+                if (acudiente.apellidos != null) {
+                    newCamper.acudiente.apellidos = acudiente.apellidos;
+                };
+
+                if (acudiente.telefono != null) {
+                    newCamper.acudiente.telefono = acudiente.telefono;
+                };
+
+                if (jornada != null) {
+                    newCamper.jornada = jornada;
+                };
+
+                campers.push(newCamper);
+
+                return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+            } else {
+                return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
+            };
+        } else if (acudiente == null) {
             const newCamper = {
                 id: campersNextId++,
                 estado: `En proceso de ingreso`,
                 riesgo: `Bajo`,
-                nombres: nombres,
-                apellidos: apellidos,
-                direccion: direccion,
-                telefono: telefono,
-                acudiente: {},
-                jornada: jornada
+                acudiente: {}
             };
 
-            if (acudiente.nombres != null) {
-                newCamper.acudiente.nombres = acudiente.nombres;
+            if (nombres != null) {
+                newCamper.nombres = nombres;
             };
 
-            if (acudiente.apellidos != null) {
-                newCamper.acudiente.apellidos = acudiente.apellidos;
+            if (apellidos != null) {
+                newCamper.apellidos = apellidos;
             };
 
-            if (acudiente.telefono != null) {
-                newCamper.acudiente.telefono = acudiente.telefono;
+            if (direccion != null) {
+                newCamper.direccion = direccion;
+            };
+
+            if (telefono != null) {
+                newCamper.telefono = telefono;
+            };
+
+            if (jornada != null) {
+                newCamper.jornada = jornada;
             };
 
             campers.push(newCamper);
 
             return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+        } else {
+            return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
         };
+    } else {
+        return res.status(400).json({ error: `request inválida (claves no permitidas en el body)` });
     };
 });
 
