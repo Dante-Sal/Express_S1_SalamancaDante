@@ -463,7 +463,7 @@ app.post(`/campers`, (req, res) => {
 });
 
 app.patch(`/campers/continue`, (req, res) => {
-    const { rawId, ...changes } = req.body;
+    const { id, ...changes } = req.body;
 
     const bodyExpectedKeys = [`nombres`, `apellidos`, `direccion`, `telefono`, `acudiente`, `jornada`];
     const attendantExpectedKeys = [`nombres`, `apellidos`, `telefono`];
@@ -471,20 +471,20 @@ app.patch(`/campers/continue`, (req, res) => {
     const incompleteCampers = campers.filter(c => c.estado === `En proceso de ingreso`);
     let incompleteCamper = undefined;
 
-    if (rawId == null) {
+    if (id == null) {
         return res.status(400).json({ error: `request inválida (falta 'id' en el body)` });
     };
 
-    const id = Number(rawId);
+    const numberId = Number(id);
 
-    if (!Number.isFinite(id) || !Number.isInteger(id) || id < 1) {
+    if (!Number.isFinite(numberId) || !Number.isInteger(numberId) || numberId < 1) {
         return res.status(400).json({ error: `request inválida ('id' no numérico positivo)` });
     };
 
     for (let i = 0; i < incompleteCampers.length; i++) {
         const c = incompleteCampers[i];
 
-        if (c.id === id) {
+        if (c.id === numberId) {
             incompleteCamper = c;
             break;
         };
@@ -508,6 +508,10 @@ app.patch(`/campers/continue`, (req, res) => {
     const incompleteCamperAttendantKeys = Object.keys(incompleteCamper.acudiente);
     const missingExpectedBodyKeys = bodyExpectedKeys.filter(k => !incompleteCamperKeys.includes(k));
     const missingExpectedAttendantKeys = attendantExpectedKeys.filter(k => !incompleteCamperAttendantKeys.includes(k));
+
+    if (!Object.keys(incompleteCamper.acudiente).length || missingExpectedAttendantKeys.length) {
+        missingExpectedBodyKeys.push(`acudiente`);
+    };
 
     if (onlyAllowedKeys(cleanBody, missingExpectedBodyKeys)) {
         if (cleanBody.nombres != null) {
@@ -550,12 +554,41 @@ app.patch(`/campers/continue`, (req, res) => {
             };
         };
 
-        if (isPlainObject(cleanBody.acudiente)) {
+        if (cleanBody.acudiente == null) {
+            if (cleanBody.nombres != null) {
+                incompleteCamper.nombres = cleanBody.nombres;
+            };
+
+            if (cleanBody.apellidos != null) {
+                incompleteCamper.apellidos = cleanBody.apellidos;
+            };
+
+            if (cleanBody.direccion != null) {
+                incompleteCamper.direccion = cleanBody.direccion;
+            };
+
+            if (cleanBody.telefono != null) {
+                incompleteCamper.telefono = cleanBody.telefono;
+            };
+
+            if (cleanBody.jornada != null) {
+                incompleteCamper.jornada = cleanBody.jornada;
+            };
+
+            const incompleteCamperIdx = campers.indexOf(incompleteCamper);
+            const updatedCamper = incompleteCamper;
+
+            campers.splice(incompleteCamperIdx, 1);
+            campers.push(updatedCamper);
+
+            return res.status(200).location(`/campers/${updatedCamper.id}`).json(updatedCamper);
+        } else if (isPlainObject(cleanBody.acudiente)) {
             const cleanAttendant = Object.fromEntries(
                 Object.entries(cleanBody.acudiente).filter(([key, val]) => val != null)
             );
 
             const attendantKeys = Object.keys(cleanAttendant);
+            const allAttendantKeys = attendantKeys.length === missingExpectedAttendantKeys.length && missingExpectedAttendantKeys.every(k => attendantKeys.includes(k));
 
             if (onlyAllowedKeys(cleanAttendant, missingExpectedAttendantKeys)) {
                 if (cleanAttendant.nombres != null) {
@@ -582,8 +615,6 @@ app.patch(`/campers/continue`, (req, res) => {
                     };
                 };
 
-                const allAttendantKeys = attendantKeys.length === missingExpectedAttendantKeys.length && missingExpectedAttendantKeys.every(k => attendantKeys.includes(k));
-
                 if (bodyKeys.length === missingExpectedBodyKeys.length && missingExpectedBodyKeys.every(k => bodyKeys.includes(k)) && allAttendantKeys) {
                     incompleteCamper.estado = `Inscrito`;
                 };
@@ -601,11 +632,45 @@ app.patch(`/campers/continue`, (req, res) => {
                 };
 
                 if (cleanBody.telefono != null) {
-                    incompleteCamper.apellidos = cleanBody.telefono;
+                    incompleteCamper.telefono = cleanBody.telefono;
                 };
 
-                if (missingExpectedAttendantKeys.length > 0 && allAttendantKeys) {
-                    incompleteCamper.acudiente = cleanBody.acudiente;
+                if (missingExpectedAttendantKeys.length > 0 && onlyAllowedKeys(cleanAttendant, missingExpectedAttendantKeys)) {
+                    const updatedCamper = {};
+
+                    let attendantNames = undefined;
+                    let attendantSurnames = undefined;
+                    let attendantTelephoneNumber = undefined;
+
+                    if (incompleteCamper.acudiente.nombres != null) {
+                        attendantNames = incompleteCamper.acudiente.nombres;
+                    } else if (cleanAttendant.nombres != null) {
+                        attendantNames = cleanAttendant.nombres;
+                    };
+
+                    if (attendantNames) {
+                        updatedCamper.nombres = attendantNames;
+                    };
+
+                    if (incompleteCamper.acudiente.apellidos != null) {
+                        attendantSurnames = incompleteCamper.acudiente.apellidos;
+                    } else if (cleanAttendant.apellidos != null) {
+                        attendantSurnames = cleanAttendant.apellidos;
+                    };
+
+                    if (attendantSurnames) {
+                        updatedCamper.apellidos = attendantSurnames;
+                    };
+
+                    if (incompleteCamper.acudiente.telefono != null) {
+                        attendantTelephoneNumber = incompleteCamper.acudiente.telefono;
+                    } else if (cleanAttendant.telefono != null) {
+                        attendantTelephoneNumber = cleanAttendant.telefono;
+                    };
+
+                    if (attendantTelephoneNumber) {
+                        updatedCamper.telefono = attendantTelephoneNumber;
+                    };
                 };
 
                 if (cleanBody.jornada != null) {
@@ -613,7 +678,6 @@ app.patch(`/campers/continue`, (req, res) => {
                 };
 
                 const incompleteCamperIdx = campers.indexOf(incompleteCamper);
-                const updatedCamper = incompleteCamper;
 
                 campers.splice(incompleteCamperIdx, 1);
                 campers.push(updatedCamper);
