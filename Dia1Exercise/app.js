@@ -319,12 +319,7 @@ app.post(`/campers`, (req, res) => {
                 const newCamper = {
                     id: campersNextId++,
                     estado: `En proceso de ingreso`,
-                    riesgo: `Bajo`,
-                    acudiente: {
-                        nombres: acudiente.nombres,
-                        apellidos: acudiente.apellidos,
-                        telefono: acudiente.telefono
-                    }
+                    riesgo: `Bajo`
                 };
 
                 if (nombres != null) {
@@ -341,6 +336,12 @@ app.post(`/campers`, (req, res) => {
 
                 if (telefono != null) {
                     newCamper.telefono = telefono;
+                };
+
+                newCamper.acudiente = {
+                    nombres: acudiente.nombres,
+                    apellidos: acudiente.apellidos,
+                    telefono: acudiente.telefono
                 };
 
                 if (jornada != null) {
@@ -378,8 +379,7 @@ app.post(`/campers`, (req, res) => {
                 const newCamper = {
                     id: campersNextId++,
                     estado: `En proceso de ingreso`,
-                    riesgo: `Bajo`,
-                    acudiente: {}
+                    riesgo: `Bajo`
                 };
 
                 if (nombres != null) {
@@ -397,6 +397,8 @@ app.post(`/campers`, (req, res) => {
                 if (telefono != null) {
                     newCamper.telefono = telefono;
                 };
+
+                newCamper.acudiente = {};
 
                 if (acudiente.nombres != null) {
                     newCamper.acudiente.nombres = acudiente.nombres;
@@ -424,8 +426,7 @@ app.post(`/campers`, (req, res) => {
             const newCamper = {
                 id: campersNextId++,
                 estado: `En proceso de ingreso`,
-                riesgo: `Bajo`,
-                acudiente: {}
+                riesgo: `Bajo`
             };
 
             if (nombres != null) {
@@ -444,6 +445,8 @@ app.post(`/campers`, (req, res) => {
                 newCamper.telefono = telefono;
             };
 
+            newCamper.acudiente = {};
+
             if (jornada != null) {
                 newCamper.jornada = jornada;
             };
@@ -451,6 +454,174 @@ app.post(`/campers`, (req, res) => {
             campers.push(newCamper);
 
             return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+        } else {
+            return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
+        };
+    } else {
+        return res.status(400).json({ error: `request inválida (claves no permitidas en el body)` });
+    };
+});
+
+app.patch(`/campers/continue`, (req, res) => {
+    const { rawId, ...changes } = req.body;
+
+    const bodyExpectedKeys = [`nombres`, `apellidos`, `direccion`, `telefono`, `acudiente`, `jornada`];
+    const attendantExpectedKeys = [`nombres`, `apellidos`, `telefono`];
+
+    const incompleteCampers = campers.filter(c => c.estado === `En proceso de ingreso`);
+    let incompleteCamper = undefined;
+
+    if (rawId == null) {
+        return res.status(400).json({ error: `request inválida (falta 'id' en el body)` });
+    };
+
+    const id = Number(rawId);
+
+    if (!Number.isFinite(id) || !Number.isInteger(id) || id < 1) {
+        return res.status(400).json({ error: `request inválida ('id' no numérico positivo)` });
+    };
+
+    for (let i = 0; i < incompleteCampers.length; i++) {
+        const c = incompleteCampers[i];
+
+        if (c.id === id) {
+            incompleteCamper = c;
+            break;
+        };
+    };
+
+    if (!incompleteCamper) {
+        return res.status(404).json({ error: `0 campers 'En proceso de ingreso' coincidentes con el 'id' solicitado` });
+    };
+
+    const cleanBody = Object.fromEntries(
+        Object.entries(changes).filter(([key, val]) => val != null)
+    );
+
+    const bodyKeys = Object.keys(cleanBody);
+
+    if (bodyKeys.length < 1) {
+        return res.status(400).json({ error: `request inválida (datos insuficientes en el body)` });
+    };
+
+    const incompleteCamperKeys = Object.keys(incompleteCamper);
+    const incompleteCamperAttendantKeys = Object.keys(incompleteCamper.acudiente);
+    const missingExpectedBodyKeys = bodyExpectedKeys.filter(k => !incompleteCamperKeys.includes(k));
+    const missingExpectedAttendantKeys = attendantExpectedKeys.filter(k => !incompleteCamperAttendantKeys.includes(k));
+
+    if (onlyAllowedKeys(cleanBody, missingExpectedBodyKeys)) {
+        if (cleanBody.nombres != null) {
+            if (typeof cleanBody.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanBody.nombres.trim())) {
+                return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'nombres')` });
+            } else if (typeof cleanBody.nombres !== `string`) {
+                return res.status(400).json({ error: `request inválida ('nombres' de tipo no string)` });
+            };
+        };
+
+        if (cleanBody.apellidos != null) {
+            if (typeof cleanBody.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanBody.apellidos.trim())) {
+                return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'apellidos')` });
+            } else if (typeof cleanBody.apellidos !== `string`) {
+                return res.status(400).json({ error: `request inválida ('apellidos' de tipo no string)` });
+            };
+        };
+
+        if (cleanBody.direccion != null) {
+            if (typeof cleanBody.direccion === `string` && cleanBody.direccion.trim() === ``) {
+                return res.status(400).json({ error: `request inválida ('direccion' vacía)` });
+            } else if (typeof cleanBody.direccion !== `string`) {
+                return res.status(400).json({ error: `request inválida ('direccion' de tipo no string)` });
+            };
+        };
+
+        if (cleanBody.telefono != null) {
+            if (typeof cleanBody.telefono === `string` && !/^3[0-9]{9}$/.test(cleanBody.telefono)) {
+                return res.status(400).json({ error: `request inválida (formato inválido en 'telefono')` });
+            } else if (typeof cleanBody.telefono !== `string`) {
+                return res.status(400).json({ error: `request inválida ('telefono' de tipo no string)` });
+            };
+        };
+
+        if (cleanBody.jornada != null) {
+            if (Number.isInteger(cleanBody.jornada) && (cleanBody.jornada < 1 || cleanBody.jornada > 4)) {
+                return res.status(400).json({ error: `request inválida (jornada inválida [válidas: 1, 2, 3, 4])` });
+            } else if (!Number.isInteger(cleanBody.jornada)) {
+                return res.status(400).json({ error: `request inválida ('jornada' de tipo no entero)` });
+            };
+        };
+
+        if (isPlainObject(cleanBody.acudiente)) {
+            const cleanAttendant = Object.fromEntries(
+                Object.entries(cleanBody.acudiente).filter(([key, val]) => val != null)
+            );
+
+            const attendantKeys = Object.keys(cleanAttendant);
+
+            if (onlyAllowedKeys(cleanAttendant, missingExpectedAttendantKeys)) {
+                if (cleanAttendant.nombres != null) {
+                    if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
+                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
+                    } else if (typeof cleanAttendant.nombres !== `string`) {
+                        return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
+                    };
+                };
+
+                if (cleanAttendant.apellidos != null) {
+                    if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
+                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
+                    } else if (typeof cleanAttendant.apellidos !== `string`) {
+                        return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
+                    };
+                };
+
+                if (cleanAttendant.telefono != null) {
+                    if (typeof cleanAttendant.telefono === `string` && !/^3[0-9]{9}$/.test(cleanAttendant.telefono)) {
+                        return res.status(400).json({ error: `request inválida (formato inválido en 'acudiente.telefono')` });
+                    } else if (typeof cleanAttendant.telefono !== `string`) {
+                        return res.status(400).json({ error: `request inválida ('acudiente.telefono' de tipo no string)` });
+                    };
+                };
+
+                const allAttendantKeys = attendantKeys.length === missingExpectedAttendantKeys.length && missingExpectedAttendantKeys.every(k => attendantKeys.includes(k));
+
+                if (bodyKeys.length === missingExpectedBodyKeys.length && missingExpectedBodyKeys.every(k => bodyKeys.includes(k)) && allAttendantKeys) {
+                    incompleteCamper.estado = `Inscrito`;
+                };
+
+                if (cleanBody.nombres != null) {
+                    incompleteCamper.nombres = cleanBody.nombres;
+                };
+
+                if (cleanBody.apellidos != null) {
+                    incompleteCamper.apellidos = cleanBody.apellidos;
+                };
+
+                if (cleanBody.direccion != null) {
+                    incompleteCamper.direccion = cleanBody.direccion;
+                };
+
+                if (cleanBody.telefono != null) {
+                    incompleteCamper.apellidos = cleanBody.telefono;
+                };
+
+                if (missingExpectedAttendantKeys.length > 0 && allAttendantKeys) {
+                    incompleteCamper.acudiente = cleanBody.acudiente;
+                };
+
+                if (cleanBody.jornada != null) {
+                    incompleteCamper.jornada = cleanBody.jornada;
+                };
+
+                const incompleteCamperIdx = campers.indexOf(incompleteCamper);
+                const updatedCamper = incompleteCamper;
+
+                campers.splice(incompleteCamperIdx, 1);
+                campers.push(updatedCamper);
+
+                return res.status(200).location(`/campers/${updatedCamper.id}`).json(updatedCamper);
+            } else {
+                return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
+            };
         } else {
             return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
         };
