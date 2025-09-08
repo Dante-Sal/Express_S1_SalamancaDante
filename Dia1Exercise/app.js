@@ -554,7 +554,13 @@ app.patch(`/campers/continue`, (req, res) => {
             };
         };
 
+        const allBodyKeys = bodyKeys.length === missingExpectedBodyKeys.length && missingExpectedBodyKeys.every(k => bodyKeys.includes(k));
+
         if (cleanBody.acudiente == null) {
+            if (allBodyKeys && Object.keys(incompleteCamper.acudiente).length === 3) {
+                incompleteCamper.estado = `Inscrito`;
+            };
+
             if (cleanBody.nombres != null) {
                 incompleteCamper.nombres = cleanBody.nombres;
             };
@@ -588,7 +594,6 @@ app.patch(`/campers/continue`, (req, res) => {
             );
 
             const attendantKeys = Object.keys(cleanAttendant);
-            const allAttendantKeys = attendantKeys.length === missingExpectedAttendantKeys.length && missingExpectedAttendantKeys.every(k => attendantKeys.includes(k));
 
             if (onlyAllowedKeys(cleanAttendant, missingExpectedAttendantKeys)) {
                 if (cleanAttendant.nombres != null) {
@@ -615,7 +620,9 @@ app.patch(`/campers/continue`, (req, res) => {
                     };
                 };
 
-                if (bodyKeys.length === missingExpectedBodyKeys.length && missingExpectedBodyKeys.every(k => bodyKeys.includes(k)) && allAttendantKeys) {
+                const allAttendantKeys = attendantKeys.length === missingExpectedAttendantKeys.length && missingExpectedAttendantKeys.every(k => attendantKeys.includes(k));
+
+                if (allBodyKeys && allAttendantKeys) {
                     incompleteCamper.estado = `Inscrito`;
                 };
 
@@ -636,7 +643,7 @@ app.patch(`/campers/continue`, (req, res) => {
                 };
 
                 if (missingExpectedAttendantKeys.length > 0 && onlyAllowedKeys(cleanAttendant, missingExpectedAttendantKeys)) {
-                    const updatedCamper = {};
+                    const updatedAttendant = {};
 
                     let attendantNames = undefined;
                     let attendantSurnames = undefined;
@@ -649,7 +656,7 @@ app.patch(`/campers/continue`, (req, res) => {
                     };
 
                     if (attendantNames) {
-                        updatedCamper.nombres = attendantNames;
+                        updatedAttendant.nombres = attendantNames;
                     };
 
                     if (incompleteCamper.acudiente.apellidos != null) {
@@ -659,7 +666,7 @@ app.patch(`/campers/continue`, (req, res) => {
                     };
 
                     if (attendantSurnames) {
-                        updatedCamper.apellidos = attendantSurnames;
+                        updatedAttendant.apellidos = attendantSurnames;
                     };
 
                     if (incompleteCamper.acudiente.telefono != null) {
@@ -669,8 +676,10 @@ app.patch(`/campers/continue`, (req, res) => {
                     };
 
                     if (attendantTelephoneNumber) {
-                        updatedCamper.telefono = attendantTelephoneNumber;
+                        updatedAttendant.telefono = attendantTelephoneNumber;
                     };
+
+                    incompleteCamper.acudiente = updatedAttendant;
                 };
 
                 if (cleanBody.jornada != null) {
@@ -678,6 +687,7 @@ app.patch(`/campers/continue`, (req, res) => {
                 };
 
                 const incompleteCamperIdx = campers.indexOf(incompleteCamper);
+                const updatedCamper = incompleteCamper;
 
                 campers.splice(incompleteCamperIdx, 1);
                 campers.push(updatedCamper);
