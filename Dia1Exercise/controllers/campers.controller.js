@@ -1,69 +1,76 @@
+const { withDb } = require('../lib/withDb');
+const { isPlainObject } = require('../lib/isPlainObject');
 const { onlyAllowedKeys } = require('../lib/onlyAllowedKeys');
-const { isPlainObject }   = require('../lib/isPlainObject');
 
-const list = (req, res) => {
-    return res.status(200).json(campers);
+const list = async (req, res) => {
+    try {
+        const campers = await withDb(db => {
+            return db.collection(`campers`).find().toArray();
+        });
+
+        return res.status(200).json(campers);
+    } catch (err) {
+        return res.status(500).send({ error: `error de base de datos` });
+    };
 };
 
-const count = (req, res) => {
-    return res.status(200).json({ total: campers.length });
+const count = async (req, res) => {
+    try {
+        const total = await withDb(db => {
+            return db.collection(`campers`).countDocuments();
+        });
+
+        return res.status(200).json({ total });
+    } catch (err) {
+        return res.status(500).send({ error: `error de base de datos` });
+    };
 };
 
-const getByParamsId = (req, res) => {
-    const id = Number(req.params.id);
+const getByParamsId = async (req, res) => {
+    const _id = Number(req.params._id);
     let camper = undefined;
 
-    if (!Number.isFinite(id) || !Number.isInteger(id) || id < 1) {
-        return res.status(400).json({ error: `request inválida ('id' no numérico positivo)` });
+    if (!Number.isFinite(_id) || !Number.isInteger(_id) || _id < 1) {
+        return res.status(400).json({ error: `request inválida ('_id' no numérico positivo)` });
     };
 
-    for (let i = 0; i < campers.length; i++) {
-        const c = campers[i];
-
-        if (c.id === id) {
-            camper = c;
-            break;
-        };
-    };
+    camper = await withDb(db => {
+        return db.collection(`campers`).findOne({ _id });
+    });
 
     if (!camper) {
-        return res.status(404).json({ error: `0 campers coincidentes con el 'id' solicitado` });
+        return res.status(404).json({ error: `0 campers coincidentes con el '_id' solicitado` });
     };
 
     return res.status(200).json(camper);
 };
 
-const getByBodyId = (req, res) => {
-    const rawId = req.body.id;
+const getByBodyId = async (req, res) => {
+    const rawId = req.body._id;
     let camper = undefined;
 
     if (rawId == null) {
-        return res.status(400).json({ error: `request inválida (falta 'id' en el body)` });
+        return res.status(400).json({ error: `request inválida (falta '_id' en el body)` });
     };
 
-    const id = Number(rawId);
+    const _id = Number(rawId);
 
-    if (!Number.isFinite(id) || !Number.isInteger(id) || id < 1) {
-        return res.status(400).json({ error: `request inválida ('id' no numérico positivo)` });
+    if (!Number.isFinite(_id) || !Number.isInteger(_id) || _id < 1) {
+        return res.status(400).json({ error: `request inválida ('_id' no numérico positivo)` });
     };
 
-    for (let i = 0; i < campers.length; i++) {
-        const c = campers[i];
-
-        if (c.id === id) {
-            camper = c;
-            break;
-        };
-    };
+    camper = await withDb(db => {
+        return db.collection(`campers`).findOne({ _id });
+    });
 
     if (!camper) {
-        return res.status(404).json({ error: `0 campers coincidentes con el 'id' solicitado` });
+        return res.status(404).json({ error: `0 campers coincidentes con el '_id' solicitado` });
     };
 
     return res.status(200).json(camper);
 };
 
-const startRegistration = (req, res) => {
+const startRegistration = async (req, res) => {
     const bodyExpectedKeys = [`nombres`, `apellidos`, `direccion`, `telefono`, `acudiente`, `jornada`];
     const attendantExpectedKeys = [`nombres`, `apellidos`, `telefono`];
 
@@ -136,7 +143,7 @@ const startRegistration = (req, res) => {
                 };
 
                 const newCamper = {
-                    id: campersNextId++,
+                    _id: campersNextId++,
                     estado: `Inscrito`,
                     riesgo: `Bajo`,
                     nombres: nombres,
@@ -151,9 +158,11 @@ const startRegistration = (req, res) => {
                     jornada: jornada
                 };
 
-                campers.push(newCamper);
+                const insertOneResult = await withDb(db => {
+                    return db.collection(`campers`).insertOne(newCamper);
+                });
 
-                return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+                return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
             } else if (attendantKeys.length < 3 && onlyAllowedKeys(cleanAttendant, attendantExpectedKeys)) {
                 if (cleanAttendant.nombres != null) {
                     if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
@@ -180,7 +189,7 @@ const startRegistration = (req, res) => {
                 };
 
                 const newCamper = {
-                    id: campersNextId++,
+                    _id: campersNextId++,
                     estado: `En proceso de ingreso`,
                     riesgo: `Bajo`,
                     nombres: nombres,
@@ -203,15 +212,17 @@ const startRegistration = (req, res) => {
                     newCamper.acudiente.telefono = acudiente.telefono;
                 };
 
-                campers.push(newCamper);
+                const insertOneResult = await withDb(db => {
+                    return db.collection(`campers`).insertOne(newCamper);
+                });
 
-                return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+                return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
             } else {
                 return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
             };
         } else if (acudiente == null) {
             const newCamper = {
-                id: campersNextId++,
+                _id: campersNextId++,
                 estado: `En proceso de ingreso`,
                 riesgo: `Bajo`,
                 nombres: nombres,
@@ -222,9 +233,11 @@ const startRegistration = (req, res) => {
                 jornada: jornada
             };
 
-            campers.push(newCamper);
+            const insertOneResult = await withDb(db => {
+                return db.collection(`campers`).insertOne(newCamper);
+            });
 
-            return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+            return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
         } else {
             return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
         };
@@ -296,7 +309,7 @@ const startRegistration = (req, res) => {
                 };
 
                 const newCamper = {
-                    id: campersNextId++,
+                    _id: campersNextId++,
                     estado: `En proceso de ingreso`,
                     riesgo: `Bajo`
                 };
@@ -327,9 +340,11 @@ const startRegistration = (req, res) => {
                     newCamper.jornada = jornada;
                 };
 
-                campers.push(newCamper);
+                const insertOneResult = await withDb(db => {
+                    return db.collection(`campers`).insertOne(newCamper);
+                });
 
-                return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+                return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
             } else if (attendantKeys.length < 3 && onlyAllowedKeys(cleanAttendant, attendantExpectedKeys)) {
                 if (cleanAttendant.nombres != null) {
                     if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
@@ -356,7 +371,7 @@ const startRegistration = (req, res) => {
                 };
 
                 const newCamper = {
-                    id: campersNextId++,
+                    _id: campersNextId++,
                     estado: `En proceso de ingreso`,
                     riesgo: `Bajo`
                 };
@@ -395,15 +410,17 @@ const startRegistration = (req, res) => {
                     newCamper.jornada = jornada;
                 };
 
-                campers.push(newCamper);
+                const insertOneResult = await withDb(db => {
+                    return db.collection(`campers`).insertOne(newCamper);
+                });
 
-                return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+                return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
             } else {
                 return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
             };
         } else if (acudiente == null) {
             const newCamper = {
-                id: campersNextId++,
+                _id: campersNextId++,
                 estado: `En proceso de ingreso`,
                 riesgo: `Bajo`
             };
@@ -430,9 +447,11 @@ const startRegistration = (req, res) => {
                 newCamper.jornada = jornada;
             };
 
-            campers.push(newCamper);
+            const insertOneResult = await withDb(db => {
+                return db.collection(`campers`).insertOne(newCamper);
+            });
 
-            return res.status(201).location(`/campers/${newCamper.id}`).json(newCamper);
+            return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
         } else {
             return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
         };
@@ -441,36 +460,30 @@ const startRegistration = (req, res) => {
     };
 };
 
-const continueRegistration = (req, res) => {
-    const { id, ...changes } = req.body;
+const continueRegistration = async (req, res) => {
+    const { _id, ...changes } = req.body;
 
     const bodyExpectedKeys = [`nombres`, `apellidos`, `direccion`, `telefono`, `acudiente`, `jornada`];
     const attendantExpectedKeys = [`nombres`, `apellidos`, `telefono`];
 
-    const incompleteCampers = campers.filter(c => c.estado === `En proceso de ingreso`);
     let incompleteCamper = undefined;
 
-    if (id == null) {
-        return res.status(400).json({ error: `request inválida (falta 'id' en el body)` });
+    if (_id == null) {
+        return res.status(400).json({ error: `request inválida (falta '_id' en el body)` });
     };
 
-    const numberId = Number(id);
+    const numberId = Number(_id);
 
     if (!Number.isFinite(numberId) || !Number.isInteger(numberId) || numberId < 1) {
-        return res.status(400).json({ error: `request inválida ('id' no numérico positivo)` });
+        return res.status(400).json({ error: `request inválida ('_id' no numérico positivo)` });
     };
 
-    for (let i = 0; i < incompleteCampers.length; i++) {
-        const c = incompleteCampers[i];
-
-        if (c.id === numberId) {
-            incompleteCamper = c;
-            break;
-        };
-    };
+    incompleteCamper = await withDb(db => {
+        return db.collection(`campers`).findOne({ _id: numberId, estado: `En proceso de ingreso` });
+    });
 
     if (!incompleteCamper) {
-        return res.status(404).json({ error: `0 campers 'En proceso de ingreso' coincidentes con el 'id' solicitado` });
+        return res.status(404).json({ error: `0 campers 'En proceso de ingreso' coincidentes con el '_id' solicitado` });
     };
 
     const cleanBody = Object.fromEntries(
@@ -560,13 +573,13 @@ const continueRegistration = (req, res) => {
                 incompleteCamper.jornada = cleanBody.jornada;
             };
 
-            const incompleteCamperIdx = campers.indexOf(incompleteCamper);
             const updatedCamper = incompleteCamper;
 
-            campers.splice(incompleteCamperIdx, 1);
-            campers.push(updatedCamper);
+            await withDb(db => {
+                return db.collection(`campers`).replaceOne({ _id: numberId }, updatedCamper, { upsert: false });
+            });
 
-            return res.status(200).location(`/campers/${updatedCamper.id}`).json(updatedCamper);
+            return res.status(200).location(`/campers/${updatedCamper._id}`).json(updatedCamper);
         } else if (isPlainObject(cleanBody.acudiente)) {
             const cleanAttendant = Object.fromEntries(
                 Object.entries(cleanBody.acudiente).filter(([key, val]) => val != null)
@@ -665,13 +678,13 @@ const continueRegistration = (req, res) => {
                     incompleteCamper.jornada = cleanBody.jornada;
                 };
 
-                const incompleteCamperIdx = campers.indexOf(incompleteCamper);
                 const updatedCamper = incompleteCamper;
 
-                campers.splice(incompleteCamperIdx, 1);
-                campers.push(updatedCamper);
+                await withDb(db => {
+                    return db.collection(`campers`).replaceOne({ _id: numberId }, updatedCamper, { upsert: false });
+                });
 
-                return res.status(200).location(`/campers/${updatedCamper.id}`).json(updatedCamper);
+                return res.status(200).location(`/campers/${updatedCamper._id}`).json(updatedCamper);
             } else {
                 return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
             };
