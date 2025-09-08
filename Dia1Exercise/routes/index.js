@@ -6,4 +6,4 @@ const campersRouter = Router();
 campersRouter.use('/campers', campers);
 campersRouter.use('/camper', camper);
 
-module.exports = { campersRouter };
+module.exports = campersRouter;

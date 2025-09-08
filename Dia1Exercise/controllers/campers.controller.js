@@ -27,11 +27,11 @@ const count = async (req, res) => {
 };
 
 const getByParamsId = async (req, res) => {
-    const _id = Number(req.params._id);
+    const _id = Number(req.params.id);
     let camper = undefined;
 
     if (!Number.isFinite(_id) || !Number.isInteger(_id) || _id < 1) {
-        return res.status(400).json({ error: `request inválida ('_id' no numérico positivo)` });
+        return res.status(400).json({ error: `request inválida (ID no numérico positivo)` });
     };
 
     camper = await withDb(db => {
@@ -39,7 +39,7 @@ const getByParamsId = async (req, res) => {
     });
 
     if (!camper) {
-        return res.status(404).json({ error: `0 campers coincidentes con el '_id' solicitado` });
+        return res.status(404).json({ error: `0 campers coincidentes con el ID solicitado` });
     };
 
     return res.status(200).json(camper);
@@ -83,6 +83,16 @@ const startRegistration = async (req, res) => {
 
     if (bodyKeys.length < 1) {
         return res.status(400).json({ error: `request inválida (datos insuficientes en el body)` });
+    };
+
+    const [lastIdDoc] = await withDb(db => {
+        return db.collection(`campers`).find({}, { projection: { _id: 1 } }).sort({ _id: -1 }).limit(1).toArray();
+    });
+
+    let lastId = 0;
+
+    if (lastIdDoc && lastIdDoc._id) {
+        lastId = lastIdDoc._id;
     };
 
     if (bodyKeys.length === 6 && bodyExpectedKeys.every(k => bodyKeys.includes(k))) {
@@ -143,7 +153,7 @@ const startRegistration = async (req, res) => {
                 };
 
                 const newCamper = {
-                    _id: campersNextId++,
+                    _id: lastId + 1,
                     estado: `Inscrito`,
                     riesgo: `Bajo`,
                     nombres: nombres,
@@ -189,7 +199,7 @@ const startRegistration = async (req, res) => {
                 };
 
                 const newCamper = {
-                    _id: campersNextId++,
+                    _id: lastId + 1,
                     estado: `En proceso de ingreso`,
                     riesgo: `Bajo`,
                     nombres: nombres,
@@ -222,7 +232,7 @@ const startRegistration = async (req, res) => {
             };
         } else if (acudiente == null) {
             const newCamper = {
-                _id: campersNextId++,
+                _id: lastId + 1,
                 estado: `En proceso de ingreso`,
                 riesgo: `Bajo`,
                 nombres: nombres,
@@ -309,7 +319,7 @@ const startRegistration = async (req, res) => {
                 };
 
                 const newCamper = {
-                    _id: campersNextId++,
+                    _id: lastId + 1,
                     estado: `En proceso de ingreso`,
                     riesgo: `Bajo`
                 };
@@ -371,7 +381,7 @@ const startRegistration = async (req, res) => {
                 };
 
                 const newCamper = {
-                    _id: campersNextId++,
+                    _id: lastId + 1,
                     estado: `En proceso de ingreso`,
                     riesgo: `Bajo`
                 };
@@ -420,7 +430,7 @@ const startRegistration = async (req, res) => {
             };
         } else if (acudiente == null) {
             const newCamper = {
-                _id: campersNextId++,
+                _id: lastId + 1,
                 estado: `En proceso de ingreso`,
                 riesgo: `Bajo`
             };
