@@ -27,22 +27,26 @@ const count = async (req, res) => {
 };
 
 const getByParamsId = async (req, res) => {
-    const _id = Number(req.params.id);
-    let camper = undefined;
+    try {
+        const _id = Number(req.params.id);
+        let camper = undefined;
 
-    if (!Number.isFinite(_id) || !Number.isInteger(_id) || _id < 1) {
-        return res.status(400).json({ error: `request inválida (ID no numérico positivo)` });
+        if (!Number.isFinite(_id) || !Number.isInteger(_id) || _id < 1) {
+            return res.status(400).json({ error: `solicitud inválida (ID no numérico positivo)` });
+        };
+
+        camper = await withDb(db => {
+            return db.collection(`campers`).findOne({ _id });
+        });
+
+        if (!camper) {
+            return res.status(404).json({ error: `0 campers coincidentes con el ID solicitado` });
+        };
+
+        return res.status(200).json(camper);
+    } catch (err) {
+        return res.status(500).send({ error: `error de base de datos` });
     };
-
-    camper = await withDb(db => {
-        return db.collection(`campers`).findOne({ _id });
-    });
-
-    if (!camper) {
-        return res.status(404).json({ error: `0 campers coincidentes con el ID solicitado` });
-    };
-
-    return res.status(200).json(camper);
 };
 
 const getByBodyId = async (req, res) => {
@@ -50,13 +54,13 @@ const getByBodyId = async (req, res) => {
     let camper = undefined;
 
     if (rawId == null) {
-        return res.status(400).json({ error: `request inválida (falta '_id' en el body)` });
+        return res.status(400).json({ error: `solicitud inválida (falta '_id' en el body)` });
     };
 
     const _id = Number(rawId);
 
     if (!Number.isFinite(_id) || !Number.isInteger(_id) || _id < 1) {
-        return res.status(400).json({ error: `request inválida ('_id' no numérico positivo)` });
+        return res.status(400).json({ error: `solicitud inválida ('_id' no numérico positivo)` });
     };
 
     camper = await withDb(db => {
@@ -82,7 +86,7 @@ const startRegistration = async (req, res) => {
     const bodyKeys = Object.keys(cleanBody);
 
     if (bodyKeys.length < 1) {
-        return res.status(400).json({ error: `request inválida (datos insuficientes en el body)` });
+        return res.status(400).json({ error: `solicitud inválida (datos insuficientes en el body)` });
     };
 
     const [lastIdDoc] = await withDb(db => {
@@ -97,33 +101,33 @@ const startRegistration = async (req, res) => {
 
     if (bodyKeys.length === 6 && bodyExpectedKeys.every(k => bodyKeys.includes(k))) {
         if (typeof nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(nombres.trim())) {
-            return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'nombres')` });
+            return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'nombres')` });
         } else if (typeof nombres !== `string`) {
-            return res.status(400).json({ error: `request inválida ('nombres' de tipo no string)` });
+            return res.status(400).json({ error: `solicitud inválida ('nombres' de tipo no string)` });
         };
 
         if (typeof apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(apellidos.trim())) {
-            return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'apellidos')` });
+            return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'apellidos')` });
         } else if (typeof apellidos !== `string`) {
-            return res.status(400).json({ error: `request inválida ('apellidos' de tipo no string)` });
+            return res.status(400).json({ error: `solicitud inválida ('apellidos' de tipo no string)` });
         };
 
         if (typeof direccion === `string` && direccion.trim() === ``) {
-            return res.status(400).json({ error: `request inválida ('direccion' vacía)` });
+            return res.status(400).json({ error: `solicitud inválida ('direccion' vacía)` });
         } else if (typeof direccion !== `string`) {
-            return res.status(400).json({ error: `request inválida ('direccion' de tipo no string)` });
+            return res.status(400).json({ error: `solicitud inválida ('direccion' de tipo no string)` });
         };
 
         if (typeof telefono === `string` && !/^3[0-9]{9}$/.test(telefono)) {
-            return res.status(400).json({ error: `request inválida (formato inválido en 'telefono')` });
+            return res.status(400).json({ error: `solicitud inválida (formato inválido en 'telefono')` });
         } else if (typeof telefono !== `string`) {
-            return res.status(400).json({ error: `request inválida ('telefono' de tipo no string)` });
+            return res.status(400).json({ error: `solicitud inválida ('telefono' de tipo no string)` });
         };
 
         if (Number.isInteger(jornada) && (jornada < 1 || jornada > 4)) {
-            return res.status(400).json({ error: `request inválida (jornada inválida; válidas: 1, 2, 3, 4)` });
+            return res.status(400).json({ error: `solicitud inválida (jornada inválida; válidas: 1, 2, 3, 4)` });
         } else if (!Number.isInteger(jornada)) {
-            return res.status(400).json({ error: `request inválida ('jornada' de tipo no entero)` });
+            return res.status(400).json({ error: `solicitud inválida ('jornada' de tipo no entero)` });
         };
 
         if (isPlainObject(acudiente)) {
@@ -135,21 +139,21 @@ const startRegistration = async (req, res) => {
 
             if (attendantKeys.length === 3 && attendantExpectedKeys.every(k => attendantKeys.includes(k))) {
                 if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
-                    return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
+                    return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
                 } else if (typeof cleanAttendant.nombres !== `string`) {
-                    return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
+                    return res.status(400).json({ error: `solicitud inválida ('acudiente.nombres' de tipo no string)` });
                 };
 
                 if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
-                    return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
+                    return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                 } else if (typeof cleanAttendant.apellidos !== `string`) {
-                    return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
+                    return res.status(400).json({ error: `solicitud inválida ('acudiente.apellidos' de tipo no string)` });
                 };
 
                 if (typeof cleanAttendant.telefono === `string` && !/^3[0-9]{9}$/.test(cleanAttendant.telefono)) {
-                    return res.status(400).json({ error: `request inválida (formato inválido en 'acudiente.telefono')` });
+                    return res.status(400).json({ error: `solicitud inválida (formato inválido en 'acudiente.telefono')` });
                 } else if (typeof cleanAttendant.telefono !== `string`) {
-                    return res.status(400).json({ error: `request inválida ('acudiente.telefono' de tipo no string)` });
+                    return res.status(400).json({ error: `solicitud inválida ('acudiente.telefono' de tipo no string)` });
                 };
 
                 const newCamper = {
@@ -176,25 +180,25 @@ const startRegistration = async (req, res) => {
             } else if (attendantKeys.length < 3 && onlyAllowedKeys(cleanAttendant, attendantExpectedKeys)) {
                 if (cleanAttendant.nombres != null) {
                     if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
-                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
+                        return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
                     } else if (typeof cleanAttendant.nombres !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.nombres' de tipo no string)` });
                     };
                 };
 
                 if (cleanAttendant.apellidos != null) {
                     if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
-                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
+                        return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                     } else if (typeof cleanAttendant.apellidos !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.apellidos' de tipo no string)` });
                     };
                 };
 
                 if (cleanAttendant.telefono != null) {
                     if (typeof cleanAttendant.telefono === `string` && !/^3[0-9]{9}$/.test(cleanAttendant.telefono)) {
-                        return res.status(400).json({ error: `request inválida (formato inválido en 'acudiente.telefono')` });
+                        return res.status(400).json({ error: `solicitud inválida (formato inválido en 'acudiente.telefono')` });
                     } else if (typeof cleanAttendant.telefono !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.telefono' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.telefono' de tipo no string)` });
                     };
                 };
 
@@ -228,7 +232,7 @@ const startRegistration = async (req, res) => {
 
                 return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
             } else {
-                return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
+                return res.status(400).json({ error: `solicitud inválida (claves no permitidas en 'acudiente')` });
             };
         } else if (acudiente == null) {
             const newCamper = {
@@ -249,46 +253,46 @@ const startRegistration = async (req, res) => {
 
             return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
         } else {
-            return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
+            return res.status(400).json({ error: `solicitud inválida ('acudiente' de tipo no plain object)` });
         };
     } else if (bodyKeys.length < 6 && onlyAllowedKeys(cleanBody, bodyExpectedKeys)) {
         if (nombres != null) {
             if (typeof nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(nombres.trim())) {
-                return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'nombres')` });
+                return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'nombres')` });
             } else if (typeof nombres !== `string`) {
-                return res.status(400).json({ error: `request inválida ('nombres' de tipo no string)` });
+                return res.status(400).json({ error: `solicitud inválida ('nombres' de tipo no string)` });
             };
         };
 
         if (apellidos != null) {
             if (typeof apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(apellidos.trim())) {
-                return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'apellidos')` });
+                return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'apellidos')` });
             } else if (typeof apellidos !== `string`) {
-                return res.status(400).json({ error: `request inválida ('apellidos' de tipo no string)` });
+                return res.status(400).json({ error: `solicitud inválida ('apellidos' de tipo no string)` });
             };
         };
 
         if (direccion != null) {
             if (typeof direccion === `string` && direccion.trim() === ``) {
-                return res.status(400).json({ error: `request inválida ('direccion' vacía)` });
+                return res.status(400).json({ error: `solicitud inválida ('direccion' vacía)` });
             } else if (typeof direccion !== `string`) {
-                return res.status(400).json({ error: `request inválida ('direccion' de tipo no string)` });
+                return res.status(400).json({ error: `solicitud inválida ('direccion' de tipo no string)` });
             };
         };
 
         if (telefono != null) {
             if (typeof telefono === `string` && !/^3[0-9]{9}$/.test(telefono)) {
-                return res.status(400).json({ error: `request inválida (formato inválido en 'telefono')` });
+                return res.status(400).json({ error: `solicitud inválida (formato inválido en 'telefono')` });
             } else if (typeof telefono !== `string`) {
-                return res.status(400).json({ error: `request inválida ('telefono' de tipo no string)` });
+                return res.status(400).json({ error: `solicitud inválida ('telefono' de tipo no string)` });
             };
         };
 
         if (jornada != null) {
             if (Number.isInteger(jornada) && (jornada < 1 || jornada > 4)) {
-                return res.status(400).json({ error: `request inválida (jornada inválida [válidas: 1, 2, 3, 4])` });
+                return res.status(400).json({ error: `solicitud inválida (jornada inválida [válidas: 1, 2, 3, 4])` });
             } else if (!Number.isInteger(jornada)) {
-                return res.status(400).json({ error: `request inválida ('jornada' de tipo no entero)` });
+                return res.status(400).json({ error: `solicitud inválida ('jornada' de tipo no entero)` });
             };
         };
 
@@ -301,21 +305,21 @@ const startRegistration = async (req, res) => {
 
             if (attendantKeys.length === 3 && attendantExpectedKeys.every(k => attendantKeys.includes(k))) {
                 if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
-                    return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
+                    return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
                 } else if (typeof cleanAttendant.nombres !== `string`) {
-                    return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
+                    return res.status(400).json({ error: `solicitud inválida ('acudiente.nombres' de tipo no string)` });
                 };
 
                 if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
-                    return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
+                    return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                 } else if (typeof cleanAttendant.apellidos !== `string`) {
-                    return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
+                    return res.status(400).json({ error: `solicitud inválida ('acudiente.apellidos' de tipo no string)` });
                 };
 
                 if (typeof cleanAttendant.telefono === `string` && !/^3[0-9]{9}$/.test(cleanAttendant.telefono)) {
-                    return res.status(400).json({ error: `request inválida (formato inválido en 'acudiente.telefono')` });
+                    return res.status(400).json({ error: `solicitud inválida (formato inválido en 'acudiente.telefono')` });
                 } else if (typeof cleanAttendant.telefono !== `string`) {
-                    return res.status(400).json({ error: `request inválida ('acudiente.telefono' de tipo no string)` });
+                    return res.status(400).json({ error: `solicitud inválida ('acudiente.telefono' de tipo no string)` });
                 };
 
                 const newCamper = {
@@ -358,25 +362,25 @@ const startRegistration = async (req, res) => {
             } else if (attendantKeys.length < 3 && onlyAllowedKeys(cleanAttendant, attendantExpectedKeys)) {
                 if (cleanAttendant.nombres != null) {
                     if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
-                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
+                        return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
                     } else if (typeof cleanAttendant.nombres !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.nombres' de tipo no string)` });
                     };
                 };
 
                 if (cleanAttendant.apellidos != null) {
                     if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
-                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
+                        return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                     } else if (typeof cleanAttendant.apellidos !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.apellidos' de tipo no string)` });
                     };
                 };
 
                 if (cleanAttendant.telefono != null) {
                     if (typeof cleanAttendant.telefono === `string` && !/^3[0-9]{9}$/.test(cleanAttendant.telefono)) {
-                        return res.status(400).json({ error: `request inválida (formato inválido en 'acudiente.telefono')` });
+                        return res.status(400).json({ error: `solicitud inválida (formato inválido en 'acudiente.telefono')` });
                     } else if (typeof cleanAttendant.telefono !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.telefono' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.telefono' de tipo no string)` });
                     };
                 };
 
@@ -426,7 +430,7 @@ const startRegistration = async (req, res) => {
 
                 return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
             } else {
-                return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
+                return res.status(400).json({ error: `solicitud inválida (claves no permitidas en 'acudiente')` });
             };
         } else if (acudiente == null) {
             const newCamper = {
@@ -463,10 +467,10 @@ const startRegistration = async (req, res) => {
 
             return res.status(201).location(`/campers/${insertOneResult.insertedId}`).json(newCamper);
         } else {
-            return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
+            return res.status(400).json({ error: `solicitud inválida ('acudiente' de tipo no plain object)` });
         };
     } else {
-        return res.status(400).json({ error: `request inválida (claves no permitidas en el body)` });
+        return res.status(400).json({ error: `solicitud inválida (claves no permitidas en el body)` });
     };
 };
 
@@ -479,13 +483,13 @@ const continueRegistration = async (req, res) => {
     let incompleteCamper = undefined;
 
     if (_id == null) {
-        return res.status(400).json({ error: `request inválida (falta '_id' en el body)` });
+        return res.status(400).json({ error: `solicitud inválida (falta '_id' en el body)` });
     };
 
     const numberId = Number(_id);
 
     if (!Number.isFinite(numberId) || !Number.isInteger(numberId) || numberId < 1) {
-        return res.status(400).json({ error: `request inválida ('_id' no numérico positivo)` });
+        return res.status(400).json({ error: `solicitud inválida ('_id' no numérico positivo)` });
     };
 
     incompleteCamper = await withDb(db => {
@@ -503,7 +507,7 @@ const continueRegistration = async (req, res) => {
     const bodyKeys = Object.keys(cleanBody);
 
     if (bodyKeys.length < 1) {
-        return res.status(400).json({ error: `request inválida (datos insuficientes en el body)` });
+        return res.status(400).json({ error: `solicitud inválida (datos insuficientes en el body)` });
     };
 
     const incompleteCamperKeys = Object.keys(incompleteCamper);
@@ -518,41 +522,41 @@ const continueRegistration = async (req, res) => {
     if (onlyAllowedKeys(cleanBody, missingExpectedBodyKeys)) {
         if (cleanBody.nombres != null) {
             if (typeof cleanBody.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanBody.nombres.trim())) {
-                return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'nombres')` });
+                return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'nombres')` });
             } else if (typeof cleanBody.nombres !== `string`) {
-                return res.status(400).json({ error: `request inválida ('nombres' de tipo no string)` });
+                return res.status(400).json({ error: `solicitud inválida ('nombres' de tipo no string)` });
             };
         };
 
         if (cleanBody.apellidos != null) {
             if (typeof cleanBody.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanBody.apellidos.trim())) {
-                return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'apellidos')` });
+                return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'apellidos')` });
             } else if (typeof cleanBody.apellidos !== `string`) {
-                return res.status(400).json({ error: `request inválida ('apellidos' de tipo no string)` });
+                return res.status(400).json({ error: `solicitud inválida ('apellidos' de tipo no string)` });
             };
         };
 
         if (cleanBody.direccion != null) {
             if (typeof cleanBody.direccion === `string` && cleanBody.direccion.trim() === ``) {
-                return res.status(400).json({ error: `request inválida ('direccion' vacía)` });
+                return res.status(400).json({ error: `solicitud inválida ('direccion' vacía)` });
             } else if (typeof cleanBody.direccion !== `string`) {
-                return res.status(400).json({ error: `request inválida ('direccion' de tipo no string)` });
+                return res.status(400).json({ error: `solicitud inválida ('direccion' de tipo no string)` });
             };
         };
 
         if (cleanBody.telefono != null) {
             if (typeof cleanBody.telefono === `string` && !/^3[0-9]{9}$/.test(cleanBody.telefono)) {
-                return res.status(400).json({ error: `request inválida (formato inválido en 'telefono')` });
+                return res.status(400).json({ error: `solicitud inválida (formato inválido en 'telefono')` });
             } else if (typeof cleanBody.telefono !== `string`) {
-                return res.status(400).json({ error: `request inválida ('telefono' de tipo no string)` });
+                return res.status(400).json({ error: `solicitud inválida ('telefono' de tipo no string)` });
             };
         };
 
         if (cleanBody.jornada != null) {
             if (Number.isInteger(cleanBody.jornada) && (cleanBody.jornada < 1 || cleanBody.jornada > 4)) {
-                return res.status(400).json({ error: `request inválida (jornada inválida [válidas: 1, 2, 3, 4])` });
+                return res.status(400).json({ error: `solicitud inválida (jornada inválida [válidas: 1, 2, 3, 4])` });
             } else if (!Number.isInteger(cleanBody.jornada)) {
-                return res.status(400).json({ error: `request inválida ('jornada' de tipo no entero)` });
+                return res.status(400).json({ error: `solicitud inválida ('jornada' de tipo no entero)` });
             };
         };
 
@@ -600,25 +604,25 @@ const continueRegistration = async (req, res) => {
             if (onlyAllowedKeys(cleanAttendant, missingExpectedAttendantKeys)) {
                 if (cleanAttendant.nombres != null) {
                     if (typeof cleanAttendant.nombres === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.nombres.trim())) {
-                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
+                        return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.nombres')` });
                     } else if (typeof cleanAttendant.nombres !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.nombres' de tipo no string)` });
                     };
                 };
 
                 if (cleanAttendant.apellidos != null) {
                     if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
-                        return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
+                        return res.status(400).json({ error: `solicitud inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                     } else if (typeof cleanAttendant.apellidos !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.apellidos' de tipo no string)` });
                     };
                 };
 
                 if (cleanAttendant.telefono != null) {
                     if (typeof cleanAttendant.telefono === `string` && !/^3[0-9]{9}$/.test(cleanAttendant.telefono)) {
-                        return res.status(400).json({ error: `request inválida (formato inválido en 'acudiente.telefono')` });
+                        return res.status(400).json({ error: `solicitud inválida (formato inválido en 'acudiente.telefono')` });
                     } else if (typeof cleanAttendant.telefono !== `string`) {
-                        return res.status(400).json({ error: `request inválida ('acudiente.telefono' de tipo no string)` });
+                        return res.status(400).json({ error: `solicitud inválida ('acudiente.telefono' de tipo no string)` });
                     };
                 };
 
@@ -696,13 +700,13 @@ const continueRegistration = async (req, res) => {
 
                 return res.status(200).location(`/campers/${updatedCamper._id}`).json(updatedCamper);
             } else {
-                return res.status(400).json({ error: `request inválida (claves no permitidas en 'acudiente')` });
+                return res.status(400).json({ error: `solicitud inválida (claves no permitidas en 'acudiente')` });
             };
         } else {
-            return res.status(400).json({ error: `request inválida ('acudiente' de tipo no plain object)` });
+            return res.status(400).json({ error: `solicitud inválida ('acudiente' de tipo no plain object)` });
         };
     } else {
-        return res.status(400).json({ error: `request inválida (claves no permitidas en el body)` });
+        return res.status(400).json({ error: `solicitud inválida (claves no permitidas en el body)` });
     };
 };
 
