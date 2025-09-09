@@ -1,5 +1,8 @@
+require('dotenv').config();
 const path = require('path');
 const swaggerJsdoc = require('swagger-jsdoc');
+
+const PORT = process.env.PORT || 3000;
 
 const options = {
     definition: {
@@ -14,12 +17,12 @@ const options = {
         },
         servers: [
             {
-                url: '/',
-                description: 'Codespaces'
+                url: `https://localhost:${PORT}`,
+                description: 'Servidor local'
             },
             {
-                url: 'https://localhost:44333',
-                description: 'Servidor local'
+                url: '/',
+                description: 'Codespaces'
             },
         ],
     },
