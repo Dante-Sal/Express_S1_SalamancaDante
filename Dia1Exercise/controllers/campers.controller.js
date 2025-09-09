@@ -102,7 +102,7 @@ const startRegistration = async (req, res) => {
             return res.status(400).json({ error: `request inválida ('nombres' de tipo no string)` });
         };
 
-        if (typeof apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(apellidos.trim())) {
+        if (typeof apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(apellidos.trim())) {
             return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'apellidos')` });
         } else if (typeof apellidos !== `string`) {
             return res.status(400).json({ error: `request inválida ('apellidos' de tipo no string)` });
@@ -140,7 +140,7 @@ const startRegistration = async (req, res) => {
                     return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
                 };
 
-                if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
+                if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
                     return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                 } else if (typeof cleanAttendant.apellidos !== `string`) {
                     return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
@@ -183,7 +183,7 @@ const startRegistration = async (req, res) => {
                 };
 
                 if (cleanAttendant.apellidos != null) {
-                    if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
+                    if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
                         return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                     } else if (typeof cleanAttendant.apellidos !== `string`) {
                         return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
@@ -261,7 +261,7 @@ const startRegistration = async (req, res) => {
         };
 
         if (apellidos != null) {
-            if (typeof apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(apellidos.trim())) {
+            if (typeof apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(apellidos.trim())) {
                 return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'apellidos')` });
             } else if (typeof apellidos !== `string`) {
                 return res.status(400).json({ error: `request inválida ('apellidos' de tipo no string)` });
@@ -306,7 +306,7 @@ const startRegistration = async (req, res) => {
                     return res.status(400).json({ error: `request inválida ('acudiente.nombres' de tipo no string)` });
                 };
 
-                if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
+                if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
                     return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                 } else if (typeof cleanAttendant.apellidos !== `string`) {
                     return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
@@ -365,7 +365,7 @@ const startRegistration = async (req, res) => {
                 };
 
                 if (cleanAttendant.apellidos != null) {
-                    if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
+                    if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
                         return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                     } else if (typeof cleanAttendant.apellidos !== `string`) {
                         return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
@@ -525,7 +525,7 @@ const continueRegistration = async (req, res) => {
         };
 
         if (cleanBody.apellidos != null) {
-            if (typeof cleanBody.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanBody.apellidos.trim())) {
+            if (typeof cleanBody.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanBody.apellidos.trim())) {
                 return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'apellidos')` });
             } else if (typeof cleanBody.apellidos !== `string`) {
                 return res.status(400).json({ error: `request inválida ('apellidos' de tipo no string)` });
@@ -607,7 +607,7 @@ const continueRegistration = async (req, res) => {
                 };
 
                 if (cleanAttendant.apellidos != null) {
-                    if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
+                    if (typeof cleanAttendant.apellidos === `string` && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(cleanAttendant.apellidos.trim())) {
                         return res.status(400).json({ error: `request inválida (número de palabras superior a 2 en 'acudiente.apellidos')` });
                     } else if (typeof cleanAttendant.apellidos !== `string`) {
                         return res.status(400).json({ error: `request inválida ('acudiente.apellidos' de tipo no string)` });
