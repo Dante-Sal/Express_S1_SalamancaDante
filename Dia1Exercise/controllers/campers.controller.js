@@ -722,4 +722,6 @@ const continueRegistration = async (req, res) => {
     };
 };
 
+
+
 module.exports = { list, count, getByParamsId, getByBodyId, startRegistration, continueRegistration };

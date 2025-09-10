@@ -17,12 +17,12 @@ const options = {
         },
         servers: [
             {
-                url: `https://localhost:${PORT}`,
-                description: 'Servidor local'
-            },
-            {
                 url: '/',
                 description: 'Codespaces'
+            },
+            {
+                url: `http://localhost:${PORT}`,
+                description: 'Servidor local'
             },
         ],
     },

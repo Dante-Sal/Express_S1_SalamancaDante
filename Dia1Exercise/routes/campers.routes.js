@@ -261,7 +261,7 @@ const camper = Router();
  *               $ref: '#/components/schemas/error'
  */
 
-campers.get('/', ctrl.list);
+campers.get(`/`, ctrl.list);
 
 /**
  * @swagger
@@ -284,7 +284,7 @@ campers.get('/', ctrl.list);
  *               $ref: '#/components/schemas/error'
  */
 
-campers.get('/count', ctrl.count);
+campers.get(`/count`, ctrl.count);
 
 /**
  * @swagger
@@ -328,7 +328,7 @@ campers.get('/count', ctrl.count);
  *               $ref: '#/components/schemas/error'
  */
 
-campers.get('/:id', ctrl.getByParamsId);
+campers.get(`/:id`, ctrl.getByParamsId);
 
 /**
  * @swagger
@@ -369,11 +369,11 @@ campers.get('/:id', ctrl.getByParamsId);
  *               $ref: '#/components/schemas/error'
  */
 
-camper.post('/', ctrl.getByBodyId);
+camper.post(`/`, ctrl.getByBodyId);
 
 /**
  * @swagger
- * /campers:
+ * /campers/register:
  *   post:
  *     summary: Registra nuevos campers/estudiantes en la base de datos (admite cuerpos de solicitud incompletos que se consideran como alumnos 'En proceso de ingreso')
  *     tags: [campers]
@@ -417,7 +417,7 @@ camper.post('/', ctrl.getByBodyId);
  *               $ref: '#/components/schemas/error'
  */
 
-campers.post('/', ctrl.startRegistration);
+campers.post(`/register`, ctrl.startRegistration);
 
 /**
  * @swagger
