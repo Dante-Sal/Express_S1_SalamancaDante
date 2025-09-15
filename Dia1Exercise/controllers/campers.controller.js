@@ -90,9 +90,7 @@ const startRegistration = async (req, res) => {
         const { nombres, apellidos, direccion, telefono, acudiente, jornada } = cleanBody;
         const bodyKeys = Object.keys(cleanBody);
 
-        if (bodyKeys.length < 1) {
-            return res.status(400).json({ error: `solicitud inválida (datos insuficientes en el body)` });
-        };
+        if (bodyKeys.length < 1) return res.status(400).json({ error: `solicitud inválida (datos insuficientes en el body)` });
 
         const [lastIdDoc] = await withDb(db => {
             return db.collection(`campers`).find({}, { projection: { _id: 1 } }).sort({ _id: -1 }).limit(1).toArray();
