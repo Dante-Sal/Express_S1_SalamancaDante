@@ -1,8 +1,27 @@
+require('dotenv').config();
 const { Router } = require('express');
-const ctrl = require('../controllers/campers.controller');
+const passport = require('passport');
+const { Strategy, ExtractJwt } = require('passport-jwt');
+const { CamperController } = require('../controllers/camperController');
 
 const campers = Router();
-const camper = Router();
+const camperController = new CamperController();
+
+passport.use(new Strategy(
+    {
+        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        secretOrKey: process.env.JWT_SECRET
+    },
+    async (payload, done) => {
+        try {
+            return done(null, payload);
+        } catch (err) {
+            return done(err, false);
+        };
+    }
+));
+
+const authMiddleware = passport.authenticate(`jwt`, { session: false });
 
 /**
  * @swagger
@@ -261,7 +280,7 @@ const camper = Router();
  *               $ref: '#/components/schemas/error'
  */
 
-campers.get(`/`, ctrl.list);
+campers.get(`/`, (req, res) => camperController.list(req, res));
 
 /**
  * @swagger
@@ -284,7 +303,7 @@ campers.get(`/`, ctrl.list);
  *               $ref: '#/components/schemas/error'
  */
 
-campers.get(`/count`, ctrl.count);
+campers.get(`/count`, (req, res) => camperController.count(req, res));
 
 /**
  * @swagger
@@ -328,48 +347,7 @@ campers.get(`/count`, ctrl.count);
  *               $ref: '#/components/schemas/error'
  */
 
-campers.get(`/:id`, ctrl.getByParamsId);
-
-/**
- * @swagger
- * /camper:
- *   post:
- *     summary: Retorna el camper/estudiante con el ID especificado por body
- *     tags: [campers]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/camperId'
- *     responses:
- *       200:
- *         description: El camper/estudiante solicitado por ID.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/camper'
- *       400:
- *         description: Error por solicitud inválida.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/error'
- *       404:
- *         description: Error por camper/estudiante no encontrado.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/error'
- *       500:
- *         description: Error de base de datos.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/error'
- */
-
-camper.post(`/`, ctrl.getByBodyId);
+campers.get(`/:id`, (req, res) => camperController.findById(req, res));
 
 /**
  * @swagger
@@ -417,7 +395,9 @@ camper.post(`/`, ctrl.getByBodyId);
  *               $ref: '#/components/schemas/error'
  */
 
-campers.post(`/register`, ctrl.startRegistration);
+campers.post(`/register`, (req, res) => camperController.register(req, res));
+
+campers.post(`/login`, (req, res) => camperController.login(req, res));
 
 /**
  * @swagger
@@ -471,6 +451,6 @@ campers.post(`/register`, ctrl.startRegistration);
  *               $ref: '#/components/schemas/error'
  */
 
-campers.patch('/continue', ctrl.continueRegistration);
+campers.patch('/continue/:id', authMiddleware, (req, res) => camperController.continue(req, res));
 
-module.exports = { campers, camper };
+module.exports = { campers };

@@ -8,13 +8,14 @@ class CamperModel {
         this.database = process.env.DATABASE;
         this.collection = `campers`;
 
-        this.BODY_EXPECTED_KEYS = [`nombres`, `apellidos`, `telefono`, `direccion`, `acudiente`, `jornada`, `contrasena`];
+        this.BODY_EXPECTED_KEYS = [`nombres`, `apellidos`, `telefono`, `direccion`, `email`, `acudiente`, `jornada`, `contrasena`];
         this.ATTENDANT_EXPECTED_KEYS = [`nombres`, `apellidos`, `telefono`];
 
         this.PATTERNS = {
             nombres: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/,
             apellidos: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/,
             direccion: /^\S[\s\S]*\S$/,
+            email: /^(?!.*\.\.)([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9._+-]*[a-zA-Z0-9])@([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9])\.[a-zA-Z]{2,}$/,
             telefono: /^3[0-9]{9}$/,
             contrasena: /^\S{8,}$/
         };
@@ -23,6 +24,7 @@ class CamperModel {
             nombres: `número de palabras superior a 2 en 'nombres'/campo 'nombres' vacío`,
             apellidos: `número de palabras diferente de 2 en 'apellidos'`,
             direccion: `'direccion' vacía`,
+            email: `formato inválido en 'email'`,
             telefono: `formato inválido en 'telefono'`,
             contrasena: `número de caracteres inferior a 8 en 'contrasena'`
         };
@@ -81,12 +83,13 @@ class CamperModel {
         let errors = [];
         const body = this.clean(payload);
         const bodyKeys = Object.keys(body);
-        const isRegistrationCompleted = bodyKeys.length === 7 && this.BODY_EXPECTED_KEYS.every(key => bodyKeys.includes(key));
+        const isRegistrationCompleted = bodyKeys.length === 8 && this.BODY_EXPECTED_KEYS.every(key => bodyKeys.includes(key));
 
         if (bodyKeys.length < 1) errors.push(`solicitud inválida (datos insuficientes en el cuerpo)`);
+        if (!bodyKeys.includes(`email`)) errors.push(`solicitud inválida (cuerpo sin 'email' incluido)`);
         if (!bodyKeys.includes(`contrasena`)) errors.push(`solicitud inválida (cuerpo sin 'contrasena' incluida)`);
 
-        if (isRegistrationCompleted || (bodyKeys.length < 7 && this.onlyAllowedKeys(body, this.BODY_EXPECTED_KEYS))) {
+        if (isRegistrationCompleted || (bodyKeys.length < 8 && this.onlyAllowedKeys(body, this.BODY_EXPECTED_KEYS))) {
             errors = this.validateAllStringFields(this.PATTERNS, body, errors);
 
             if (this.isPlainObject(body.acudiente) || body.acudiente == null) {
@@ -131,7 +134,7 @@ class CamperModel {
         if (bodyKeys.length < 1) errors.push(`solicitud inválida (datos insuficientes en el cuerpo)`);
 
         let incompleteCamper = await this.findIncompleteById(_id);
-        if (!incompleteCamper) incompleteCamper = {}; 
+        if (!incompleteCamper) return { ok: false, errors: 404 };
 
         const incompleteCamperKeys = Object.keys(incompleteCamper);
         const incompleteCamperAttendantKeys = Object.keys(incompleteCamper.acudiente || {});
@@ -183,6 +186,10 @@ class CamperModel {
         return await bcrypt.hash(password, 10);
     };
 
+    async compare(reqPassword, dbPassword) {
+        return await bcrypt.compare(reqPassword, dbPassword);
+    };
+
     async list() {
         const collection = await this.connect();
         return await collection.find().toArray();
@@ -196,6 +203,11 @@ class CamperModel {
     async findById(_id) {
         const collection = await this.connect();
         return await collection.findOne({ _id: new ObjectId(_id) });
+    };
+
+    async findByEmail(email) {
+        const collection = await this.connect();
+        return await collection.findOne({ email });
     };
 
     async findIncompleteById(_id) {
@@ -212,6 +224,7 @@ class CamperModel {
             nombres: body.nombres,
             apellidos: body.apellidos,
             direccion: body.direccion,
+            email: body.email,
             telefono: body.telefono,
             acudiente: {
                 nombres: body.acudiente.nombres,
@@ -223,7 +236,7 @@ class CamperModel {
         });
     };
 
-    async startRegistration(body) {
+    async startRegistrationAndStop(body) {
         const collection = await this.connect();
 
         const newCamper = {
@@ -234,12 +247,15 @@ class CamperModel {
         if (body.nombres) newCamper.nombres = body.nombres;
         if (body.apellidos) newCamper.apellidos = body.apellidos;
         if (body.direccion) newCamper.direccion = body.direccion;
+        newCamper.email = body.email;
         if (body.telefono) newCamper.telefono = body.telefono;
-        if (body.acudiente) newCamper.acudiente = {};
+        if (body.acudiente) {
+            newCamper.acudiente = {}
 
-        if (body.acudiente.nombres) newCamper.acudiente.nombres = body.acudiente.nombres;
-        if (body.acudiente.apellidos) newCamper.acudiente.apellidos = body.acudiente.apellidos;
-        if (body.acudiente.telefono) newCamper.acudiente.telefono = body.acudiente.telefono;
+            if (body.acudiente.nombres) newCamper.acudiente.nombres = body.acudiente.nombres;
+            if (body.acudiente.apellidos) newCamper.acudiente.apellidos = body.acudiente.apellidos;
+            if (body.acudiente.telefono) newCamper.acudiente.telefono = body.acudiente.telefono;
+        };
 
         if (body.jornada) newCamper.jornada = body.jornada;
         newCamper.contrasena = body.contrasena;
@@ -258,8 +274,15 @@ class CamperModel {
         if (body.jornada != null) incompleteCamper.jornada = body.jornada;
 
         const completeCamper = incompleteCamper;
+        const response = await collection.replaceOne({
+            _id: 
+                incompleteCamper._id instanceof ObjectId ? 
+                incompleteCamper._id :
+                new ObjectId(incompleteCamper._id) },
+            completeCamper
+        );
 
-        return await collection.replaceOne({ _id: new ObjectId(incompleteCamper._id) }, completeCamper);
+        return [response, completeCamper];
     };
 
     async continueRegistrationWithAttendant(body, incompleteCamper, missingExpectedAttendantKeys, allBodyKeys, allAttendantKeys) {
@@ -299,7 +322,10 @@ class CamperModel {
         if (body.jornada != null) incompleteCamper.jornada = body.jornada;
 
         const updatedCamper = incompleteCamper;
+        const response = await collection.replaceOne({ _id: new ObjectId(incompleteCamper._id) }, updatedCamper);
 
-        return await collection.replaceOne({ _id: new ObjectId(incompleteCamper._id) }, updatedCamper);
+        return [response, updatedCamper];
     };
 };
+
+module.exports = { CamperModel }

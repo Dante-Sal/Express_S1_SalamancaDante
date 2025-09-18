@@ -1,9 +1,8 @@
 const { Router } = require('express');
-const { campers, camper } = require('./campers.routes');
+const { campers } = require('./camperRoutes');
 
 const campersRouter = Router();
 
 campersRouter.use('/campers', campers);
-campersRouter.use('/camper', camper);
 
 module.exports = campersRouter;
