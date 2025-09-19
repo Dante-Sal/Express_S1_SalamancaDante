@@ -21,7 +21,13 @@ passport.use(new Strategy(
     }
 ));
 
-const authMiddleware = passport.authenticate(`jwt`, { session: false });
+const authMiddleware = (req, res, next) => passport.authenticate(`jwt`, { session: false }, (err, camper, info) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!camper) return res.status(401).json({ error: `acceso denegado (fallo en la autenticación por token de acceso)`, info: info.message });
+
+    req.camper = camper;
+    next();
+})(req, res, next);
 
 /**
  * @swagger

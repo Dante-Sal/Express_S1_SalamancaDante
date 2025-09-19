@@ -274,7 +274,7 @@ class CamperModel {
         if (body.jornada != null) incompleteCamper.jornada = body.jornada;
 
         const completeCamper = incompleteCamper;
-        const { contrasena, ...completePublicCamper } = updatedCamper;
+        const { contrasena, ...completePublicCamper } = completeCamper;
         const response = await collection.replaceOne({
             _id: 
                 incompleteCamper._id instanceof ObjectId ? 
@@ -298,22 +298,25 @@ class CamperModel {
         if (missingExpectedAttendantKeys.length > 0 && this.onlyAllowedKeys(body.acudiente, missingExpectedAttendantKeys)) {
             const updatedAttendant = {};
 
+            const currentAttendant = incompleteCamper.acudiente || {};
+            const newAttendant = body.acudiente || {};
+
             let attendantNames = undefined;
             let attendantSurnames = undefined;
             let attendantTelephoneNumber = undefined;
 
-            if (incompleteCamper.acudiente.nombres != null) attendantNames = incompleteCamper.acudiente.nombres;
-            else if (body.acudiente.nombres != null) attendantNames = body.acudiente.nombres;
+            if (currentAttendant.nombres != null) attendantNames = currentAttendant.nombres;
+            else if (newAttendant.nombres != null) attendantNames = newAttendant.nombres;
 
             if (attendantNames) updatedAttendant.nombres = attendantNames;
 
-            if (incompleteCamper.acudiente.apellidos != null) attendantSurnames = incompleteCamper.acudiente.apellidos;
-            else if (body.acudiente.apellidos != null) attendantSurnames = body.acudiente.apellidos;
+            if (currentAttendant.apellidos != null) attendantSurnames = currentAttendant.apellidos;
+            else if (newAttendant.apellidos != null) attendantSurnames = newAttendant.apellidos;
 
             if (attendantSurnames) updatedAttendant.apellidos = attendantSurnames;
 
-            if (incompleteCamper.acudiente.telefono != null) attendantTelephoneNumber = incompleteCamper.acudiente.telefono;
-            else if (body.acudiente.telefono != null) attendantTelephoneNumber = body.acudiente.telefono;
+            if (currentAttendant.telefono != null) attendantTelephoneNumber = currentAttendant.telefono;
+            else if (newAttendant.telefono != null) attendantTelephoneNumber = newAttendant.telefono;
 
             if (attendantTelephoneNumber) updatedAttendant.telefono = attendantTelephoneNumber;
 

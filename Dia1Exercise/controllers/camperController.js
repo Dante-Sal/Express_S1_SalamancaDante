@@ -109,7 +109,7 @@ class CamperController {
                 response = await this.camperModel.continueRegistrationWithAttendant(body, incompleteCamper, missingExpectedAttendantKeys, allBodyKeys, allAttendantKeys);
             };
 
-            res.status(200).location(`/campers/${id}`).json({ msg: `éxito (camper actualizado en la base de datos)`, response: response[0], data: { id, ...response[1] } });
+            res.status(200).location(`/campers/${id}`).json({ msg: `éxito (camper actualizado en la base de datos)`, response: response[0], data: response[1] });
         } catch (err) {
             res.status(500).json({ error: err.message });
         };
