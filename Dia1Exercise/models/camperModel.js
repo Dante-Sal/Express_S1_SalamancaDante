@@ -8,7 +8,7 @@ class CamperModel {
         this.database = process.env.DATABASE;
         this.collection = `campers`;
 
-        this.BODY_EXPECTED_KEYS = [`nombres`, `apellidos`, `telefono`, `direccion`, `email`, `acudiente`, `jornada`, `contrasena`];
+        this.BODY_EXPECTED_KEYS = [`nombres`, `apellidos`, `direccion`, `email`, `telefono`, `acudiente`, `jornada`, `contrasena`];
         this.ATTENDANT_EXPECTED_KEYS = [`nombres`, `apellidos`, `telefono`];
 
         this.PATTERNS = {
@@ -192,7 +192,7 @@ class CamperModel {
 
     async list() {
         const collection = await this.connect();
-        return await collection.find().toArray();
+        return await collection.find({}, { projection: { contrasena: 0 } }).toArray();
     };
 
     async count() {
@@ -202,7 +202,7 @@ class CamperModel {
 
     async findById(_id) {
         const collection = await this.connect();
-        return await collection.findOne({ _id: new ObjectId(_id) });
+        return await collection.findOne({ _id: new ObjectId(_id) }, { projection: { contrasena: 0 } });
     };
 
     async findByEmail(email) {
@@ -274,6 +274,7 @@ class CamperModel {
         if (body.jornada != null) incompleteCamper.jornada = body.jornada;
 
         const completeCamper = incompleteCamper;
+        const { contrasena, ...completePublicCamper } = updatedCamper;
         const response = await collection.replaceOne({
             _id: 
                 incompleteCamper._id instanceof ObjectId ? 
@@ -282,7 +283,7 @@ class CamperModel {
             completeCamper
         );
 
-        return [response, completeCamper];
+        return [response, completePublicCamper];
     };
 
     async continueRegistrationWithAttendant(body, incompleteCamper, missingExpectedAttendantKeys, allBodyKeys, allAttendantKeys) {
@@ -322,9 +323,10 @@ class CamperModel {
         if (body.jornada != null) incompleteCamper.jornada = body.jornada;
 
         const updatedCamper = incompleteCamper;
+        const { contrasena, ...updatedPublicCamper } = updatedCamper;
         const response = await collection.replaceOne({ _id: new ObjectId(incompleteCamper._id) }, updatedCamper);
 
-        return [response, updatedCamper];
+        return [response, updatedPublicCamper];
     };
 };
 

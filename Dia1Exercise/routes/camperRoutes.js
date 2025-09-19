@@ -33,11 +33,13 @@ const authMiddleware = passport.authenticate(`jwt`, { session: false });
  *         - _id
  *         - estado
  *         - riesgo
+ *         - email
+ *         - contrasena
  *       properties:
  *         _id:
- *           type: integer
- *           minimum: 1
- *           description: El ID auto-generado del camper/estudiante.
+ *           type: string
+ *           pattern: '^[a-fA-F0-9]{24}$'
+ *           description: El ID auto-generado del camper.
  *         estado:
  *           type: string
  *           enum: 
@@ -48,65 +50,75 @@ const authMiddleware = passport.authenticate(`jwt`, { session: false });
  *             - Graduado
  *             - Retirado
  *             - Expulsado
- *           description: El estado actual del camper/estudiante.
+ *           description: El estado actual del camper.
  *         riesgo:
  *           type: string
  *           enum:
  *             - Bajo
  *             - Medio
  *             - Alto
- *           description: El riesgo actual del camper/estudiante (a más alto, mayor probabilidad de pérdida de la beca).
+ *           description: El riesgo actual del camper (a más alto, mayor probabilidad de pérdida de la beca).
  *         nombres:
  *           type: string
  *           pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *           description: El nombre/s del camper/estudiante (se admiten máximo 2 por cada uno).
+ *           description: El nombre/s del camper (se admiten máximo 2 por cada uno).
  *         apellidos:
  *           type: string
  *           pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *           description: Los apellidos del camper/estudiante (se admiten únicamente 2 por cada uno).
+ *           description: Los apellidos del camper (se admiten únicamente 2 por cada uno).
  *         direccion:
  *           type: string
  *           pattern: '^\S[\s\S]*\S$'
- *           description: La dirección del domicilio del camper/estudiante (este campo no puede estar vacío).
+ *           description: La dirección del domicilio del camper (este campo no puede estar vacío).
+ *         email:
+ *           type: string
+ *           pattern: '^(?!.*\.\.)([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9._+-]*[a-zA-Z0-9])@([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9])\.[a-zA-Z]{2,}$'
+ *           description: La dirección de correo electrónico del camper (se admiten formatos válidos de correo electrónico).
  *         telefono:
  *           type: string
  *           pattern: '^3[0-9]{9}$'
- *           description: El número de teléfono del camper/estudiante (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
+ *           description: El número de teléfono del camper (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
  *         acudiente:
  *           type: object
  *           properties:
  *             nombres:
  *               type: string
  *               pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *               description: El nombre/s del acudiente del camper/estudiante (se admiten máximo 2 por cada uno).
+ *               description: El nombre/s del acudiente del camper (se admiten máximo 2 por cada uno).
  *             apellidos:
  *               type: string
  *               pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *               description: Los apellidos del acudiente del camper/estudiante (se admiten únicamente 2 por cada uno).
+ *               description: Los apellidos del acudiente del camper (se admiten únicamente 2 por cada uno).
  *             telefono:
  *               type: string
  *               pattern: '^3[0-9]{9}$'
- *               description: El número de teléfono del acudiente del camper/estudiante (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
+ *               description: El número de teléfono del acudiente del camper (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
  *           additionalProperties: false
  *         jornada:
  *           type: integer
  *           minimum: 1
  *           maximum: 4
- *           description: El número de la jornada en la cual estudia el camper/estudiante (debe estar dentro del rango 1-4).
+ *           description: El número de la jornada en la cual estudia el camper (debe estar dentro del rango 1-4).
+ *         contrasena:
+ *           type: string
+ *           pattern: '^\S{8,}$'
+ *           description: La contraseña del camper (debe tener una longitud mínima de 8 caracteres; se almacena hasheada).
  *       additionalProperties: false
  *       example:
- *         _id: 1
+ *         _id: 60d1e6c2a7b3b9d6c7a5b8a0
  *         estado: Inscrito
  *         riesgo: Bajo
  *         nombres: Camper Nombre
  *         apellidos: Camper Apellido
  *         direccion: 'Calle Ejemplo # 50 - 53'
+ *         email: camper@ejemplo.com
  *         telefono: '3000000000'
  *         acudiente: 
  *           nombres: Acudiente Nombre
  *           apellidos: Acudiente Apellido
- *           telefono: '3000000001'
+ *           telefono: '3100000000'
  *         jornada: 1
+ *         contrasena: contraseñaSegura123
  *     error:
  *       type: object
  *       required:
@@ -117,127 +129,212 @@ const authMiddleware = passport.authenticate(`jwt`, { session: false });
  *           pattern: '^\S[\s\S]*\S$'
  *           description: Descripción del error.
  *       additionalProperties: false
- *     camperId:
- *       type: object
- *       required:
- *         - _id
- *       properties:
- *         _id:
- *           type: integer
- *           minimum: 1
- *           description: El ID auto-generado del camper/estudiante.
- *       additionalProperties: false
+ *     message:
+ *       type: string
+ *       pattern: '^\S[\s\S]*\S$'
+ *       description: Descripción de la respuesta de la solicitud.
  *     count:
  *       type: object
  *       required:
+ *         - msg
  *         - total
  *       properties:
+ *         msg:
+ *           $ref: '#/components/schemas/message'
  *         total:
  *           type: integer
- *           description: Cantidad total de campers/estudiantes registrados en la base de datos.
+ *           description: Cantidad total de campers registrados en la base de datos.
  *       additionalProperties: false
  *       example:
  *         total: 1
- *     registrationCamper:
+ *     publicCamper:
  *       type: object
+ *       required:
+ *         - _id
+ *         - email
  *       properties:
+ *         _id:
+ *           type: string
+ *           pattern: '^[a-fA-F0-9]{24}$'
+ *           description: El ID auto-generado del camper.
  *         nombres:
  *           type: string
  *           pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *           description: El nombre/s del camper/estudiante (se admiten máximo 2 por cada uno).
+ *           description: El nombre/s del camper (se admiten máximo 2 por cada uno).
  *         apellidos:
  *           type: string
  *           pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *           description: Los apellidos del camper/estudiante (se admiten únicamente 2 por cada uno).
+ *           description: Los apellidos del camper (se admiten únicamente 2 por cada uno).
  *         direccion:
  *           type: string
  *           pattern: '^\S[\s\S]*\S$'
- *           description: La dirección del domicilio del camper/estudiante (este campo no puede estar vacío).
+ *           description: La dirección del domicilio del camper (este campo no puede estar vacío).
+ *         email:
+ *           type: string
+ *           pattern: '^(?!.*\.\.)([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9._+-]*[a-zA-Z0-9])@([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9])\.[a-zA-Z]{2,}$'
+ *           description: La dirección de correo electrónico del camper (se admiten formatos válidos de correo electrónico).
  *         telefono:
  *           type: string
  *           pattern: '^3[0-9]{9}$'
- *           description: El número de teléfono del camper/estudiante (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
+ *           description: El número de teléfono del camper (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
  *         acudiente:
  *           type: object
  *           properties:
  *             nombres:
  *               type: string
  *               pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *               description: El nombre/s del acudiente del camper/estudiante (se admiten máximo 2 por cada uno).
+ *               description: El nombre/s del acudiente del camper (se admiten máximo 2 por cada uno).
  *             apellidos:
  *               type: string
  *               pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *               description: Los apellidos del acudiente del camper/estudiante (se admiten únicamente 2 por cada uno).
+ *               description: Los apellidos del acudiente del camper (se admiten únicamente 2 por cada uno).
  *             telefono:
  *               type: string
  *               pattern: '^3[0-9]{9}$'
- *               description: El número de teléfono del acudiente del camper/estudiante (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
+ *               description: El número de teléfono del acudiente del camper (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
  *           additionalProperties: false        
  *         jornada:
  *           type: integer
  *           minimum: 1
  *           maximum: 4
- *           description: El número de la jornada en la cual estudia el camper/estudiante (debe estar dentro del rango 1-4).
+ *           description: El número de la jornada en la cual estudia el camper (debe estar dentro del rango 1-4).
  *       additionalProperties: false
  *       example:
+ *         _id: 60d1e6c2a7b3b9d6c7a5b8a0
  *         nombres: Camper Nombre
  *         apellidos: Camper Apellido
  *         direccion: 'Calle Ejemplo # 50 - 53'
+ *         email: camper@ejemplo.com
  *         telefono: '3000000000'
  *         acudiente: 
  *           nombres: Acudiente Nombre
  *           apellidos: Acudiente Apellido
- *           telefono: '3000000001'
+ *           telefono: '3100000000'
  *         jornada: 1
- *     registrationContinuationCamper:
+ *     registrationStartCamper:
  *       type: object
  *       required:
- *         - _id
+ *         - email
+ *         - contrasena
  *       properties:
- *         _id:
- *           type: integer
- *           minimum: 1
- *           description: El ID auto-generado del camper/estudiante.
  *         nombres:
  *           type: string
  *           pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *           description: El nombre/s del camper/estudiante (se admiten máximo 2 por cada uno).
+ *           description: El nombre/s del camper (se admiten máximo 2 por cada uno).
  *         apellidos:
  *           type: string
  *           pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *           description: Los apellidos del camper/estudiante (se admiten únicamente 2 por cada uno).
+ *           description: Los apellidos del camper (se admiten únicamente 2 por cada uno).
  *         direccion:
  *           type: string
  *           pattern: '^\S[\s\S]*\S$'
- *           description: La dirección del domicilio del camper/estudiante (este campo no puede estar vacío).
+ *           description: La dirección del domicilio del camper (este campo no puede estar vacío).
+ *         email:
+ *           type: string
+ *           pattern: '^(?!.*\.\.)([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9._+-]*[a-zA-Z0-9])@([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9])\.[a-zA-Z]{2,}$'
+ *           description: La dirección de correo electrónico del camper (se admiten formatos válidos de correo electrónico).
  *         telefono:
  *           type: string
  *           pattern: '^3[0-9]{9}$'
- *           description: El número de teléfono del camper/estudiante (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
+ *           description: El número de teléfono del camper (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
  *         acudiente:
  *           type: object
  *           properties:
  *             nombres:
  *               type: string
  *               pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *               description: El nombre/s del acudiente del camper/estudiante (se admiten máximo 2 por cada uno).
+ *               description: El nombre/s del acudiente del camper (se admiten máximo 2 por cada uno).
  *             apellidos:
  *               type: string
  *               pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
- *               description: Los apellidos del acudiente del camper/estudiante (se admiten únicamente 2 por cada uno).
+ *               description: Los apellidos del acudiente del camper (se admiten únicamente 2 por cada uno).
  *             telefono:
  *               type: string
  *               pattern: '^3[0-9]{9}$'
- *               description: El número de teléfono del acudiente del camper/estudiante (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
+ *               description: El número de teléfono del acudiente del camper (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
+ *           additionalProperties: false        
+ *         jornada:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 4
+ *           description: El número de la jornada en la cual estudia el camper (debe estar dentro del rango 1-4).
+ *         contrasena:
+ *           type: string
+ *           pattern: '^\S{8,}$'
+ *           description: La contraseña del camper (debe tener una longitud mínima de 8 caracteres; se almacena hasheada).
+ *       additionalProperties: false
+ *       example:
+ *         nombres: Camper Nombre
+ *         apellidos: Camper Apellido
+ *         direccion: 'Calle Ejemplo # 50 - 53'
+ *         email: camper@ejemplo.com
+ *         telefono: '3000000000'
+ *         acudiente: 
+ *           nombres: Acudiente Nombre
+ *           apellidos: Acudiente Apellido
+ *           telefono: '3100000000'
+ *         jornada: 1
+ *         contrasena: contraseñaSegura123
+ *     loginCredentials:
+ *       type: object
+ *       required:
+ *         - email
+ *         - contrasena
+ *       properties:
+ *         email:
+ *           type: string
+ *           pattern: '^(?!.*\.\.)([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9._+-]*[a-zA-Z0-9])@([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9])\.[a-zA-Z]{2,}$'
+ *           description: La dirección de correo electrónico del camper (se admiten formatos válidos de correo electrónico).
+ *         contrasena:
+ *           type: string
+ *           pattern: '^\S{8,}$'
+ *           description: La contraseña del camper (debe tener una longitud mínima de 8 caracteres).
+ *       additionalProperties: false
+ *       example:
+ *         email: camper@ejemplo.com
+ *         contrasena: contraseñaSegura123
+ *     registrationContinuationCamper:
+ *       type: object
+ *       properties:
+ *         nombres:
+ *           type: string
+ *           pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
+ *           description: El nombre/s del camper (se admiten máximo 2 por cada uno).
+ *         apellidos:
+ *           type: string
+ *           pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
+ *           description: Los apellidos del camper (se admiten únicamente 2 por cada uno).
+ *         direccion:
+ *           type: string
+ *           pattern: '^\S[\s\S]*\S$'
+ *           description: La dirección del domicilio del camper (este campo no puede estar vacío).
+ *         telefono:
+ *           type: string
+ *           pattern: '^3[0-9]{9}$'
+ *           description: El número de teléfono del camper (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
+ *         acudiente:
+ *           type: object
+ *           properties:
+ *             nombres:
+ *               type: string
+ *               pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$|^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
+ *               description: El nombre/s del acudiente del camper (se admiten máximo 2 por cada uno).
+ *             apellidos:
+ *               type: string
+ *               pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+ [a-zA-ZáéíóúÁÉÍÓÚñÑ]+$'
+ *               description: Los apellidos del acudiente del camper (se admiten únicamente 2 por cada uno).
+ *             telefono:
+ *               type: string
+ *               pattern: '^3[0-9]{9}$'
+ *               description: El número de teléfono del acudiente del camper (debe iniciar con el dígito 3 y tener una longitud de 10 caracteres).
  *           additionalProperties: false
  *         jornada:
  *           type: integer
  *           minimum: 1
  *           maximum: 4
- *           description: El número de la jornada en la cual estudia el camper/estudiante (debe estar dentro del rango 1-4).
+ *           description: El número de la jornada en la cual estudia el camper (debe estar dentro del rango 1-4).
  *       additionalProperties: false
  *       example:
- *         _id: 1
  *         nombres: Camper Nombre
  *         apellidos: Camper Apellido
  *         direccion: 'Calle Ejemplo # 50 - 53'
@@ -245,34 +342,47 @@ const authMiddleware = passport.authenticate(`jwt`, { session: false });
  *         acudiente: 
  *           nombres: Acudiente Nombre
  *           apellidos: Acudiente Apellido
- *           telefono: '3000000001'
+ *           telefono: '3100000000'
  *         jornada: 1
+ *   securitySchemes:
+ *     BearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  */
 
 /**
  * @swagger
  * tags:
  *   name: campers
- *   description: Gestionamiento de campers/estudiantes.
+ *   description: Gestionamiento de campers.
  */
 
 /**
  * @swagger
  * /campers:
  *   get:
- *     summary: Retorna una lista de todos los campers/estudiantes registrados en la base de datos
+ *     summary: Retorna una lista de todos los campers registrados en la base de datos.
  *     tags: [campers]
  *     responses:
  *       200:
- *         description: La lista de campers/estudiantes.
+ *         description: La lista de campers.
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/camper'
+ *               type: object
+ *               required:
+ *                 - msg
+ *                 - campers
+ *               properties:
+ *                 msg:
+ *                   $ref: '#/components/schemas/message'
+ *                 campers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/publicCamper'
  *       500:
- *         description: Error de base de datos.
+ *         description: Error interno del servidor.
  *         content:
  *           application/json:
  *             schema:
@@ -286,17 +396,17 @@ campers.get(`/`, (req, res) => camperController.list(req, res));
  * @swagger
  * /campers/count:
  *   get:
- *     summary: Retorna un objeto 'total' que contiene la cantidad de campers/estudiantes registrados en la base de datos
+ *     summary: Retorna un objeto 'total' que contiene la cantidad de campers registrados en la base de datos.
  *     tags: [campers]
  *     responses:
  *       200:
- *         description: El total de campers/estudiantes.
+ *         description: El total de campers.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/count'
  *       500:
- *         description: Error de base de datos.
+ *         description: Error interno del servidor.
  *         content:
  *           application/json:
  *             schema:
@@ -309,24 +419,32 @@ campers.get(`/count`, (req, res) => camperController.count(req, res));
  * @swagger
  * /campers/{id}:
  *   get:
- *     operationId: getByParamsId
- *     summary: Retorna el camper/estudiante con el ID especificado por parámetros
+ *     operationId: findById
+ *     summary: Retorna el camper con el ID especificado por parámetros.
  *     tags: [campers]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         description: ID numérico del camper/estudiante.
+ *         description: ID del camper.
  *         schema:
- *           type: integer
- *           minimum: 1
+ *           type: string
+ *           pattern: '^[a-fA-F0-9]{24}$'
  *     responses:
  *       200:
- *         description: El camper/estudiante solicitado por ID.
+ *         description: El camper solicitado por ID.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/camper'
+ *               type: object
+ *               required:
+ *                 - msg
+ *                 - camper
+ *               properties:
+ *                 msg:
+ *                   $ref: '#/components/schemas/message'
+ *                 camper:
+ *                   $ref: '#/components/schemas/publicCamper'
  *       400:
  *         description: Error por solicitud inválida.
  *         content:
@@ -334,13 +452,13 @@ campers.get(`/count`, (req, res) => camperController.count(req, res));
  *             schema:
  *               $ref: '#/components/schemas/error'
  *       404:
- *         description: Error por camper/estudiante no encontrado.
+ *         description: Error por camper no encontrado.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/error'
  *       500:
- *         description: Error de base de datos.
+ *         description: Error interno del servidor.
  *         content:
  *           application/json:
  *             schema:
@@ -353,32 +471,53 @@ campers.get(`/:id`, (req, res) => camperController.findById(req, res));
  * @swagger
  * /campers/register:
  *   post:
- *     summary: Registra nuevos campers/estudiantes en la base de datos (admite cuerpos de solicitud incompletos que se consideran como alumnos 'En proceso de ingreso')
+ *     summary: Registra nuevos campers en la base de datos (admite cuerpos de solicitud incompletos que se consideran como alumnos 'En proceso de ingreso').
  *     tags: [campers]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/registrationCamper'
+ *             $ref: '#/components/schemas/registrationStartCamper'
  *     responses:
  *       201:
- *         description: El camper/estudiante registrado.
+ *         description: El camper registrado.
  *         headers:
  *           Location:
  *             description: URL del camper registrado.
  *             schema:
  *               type: string
  *               format: uri-reference
- *             example: /campers/1
+ *             example: /campers/60d1e6c2a7b3b9d6c7a5b8a0
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/camper'
+ *               type: object
+ *               required:
+ *                 - msg
+ *                 - response
+ *                 - data
+ *               properties:
+ *                 msg:
+ *                   $ref: '#/components/schemas/message'
+ *                 response:
+ *                   type: object
+ *                   required:
+ *                     - acknowledged
+ *                     - insertedId
+ *                   properties:
+ *                     acknowledged:
+ *                       type: boolean
+ *                     insertedId:
+ *                       type: string
+ *                       pattern: '^[a-fA-F0-9]{24}$'
+ *                       example: 60d1e6c2a7b3b9d6c7a5b8a0
+ *                 data:
+ *                   $ref: '#/components/schemas/publicCamper'
  *         links:
  *           GetCamperById:
- *             description: Retorna el camper/estudiante registrado.
- *             operationId: getByParamsId
+ *             description: Retorna el camper registrado.
+ *             operationId: findById
  *             parameters:
  *               id: '$response.body#/_id'
  *       400:
@@ -388,7 +527,7 @@ campers.get(`/:id`, (req, res) => camperController.findById(req, res));
  *             schema:
  *               $ref: '#/components/schemas/error'
  *       500:
- *         description: Error de base de datos.
+ *         description: Error interno del servidor.
  *         content:
  *           application/json:
  *             schema:
@@ -397,14 +536,77 @@ campers.get(`/:id`, (req, res) => camperController.findById(req, res));
 
 campers.post(`/register`, (req, res) => camperController.register(req, res));
 
+/**
+ * @swagger
+ * /campers/login:
+ *   post:
+ *     summary: Inicia sesión con las credenciales de campers registrados en la base de datos (retorna un token de acceso que permite la ejecución de acciones que necesiten autenticación).
+ *     tags: [campers]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/loginCredentials'
+ *     responses:
+ *       202:
+ *         description: El token de acceso que permitirá la ejecución de determinadas acciones.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - msg
+ *                 - token
+ *                 - expiresIn
+ *               properties:
+ *                 msg:
+ *                   $ref: '#/components/schemas/message'
+ *                 token:
+ *                   type: string
+ *                   pattern: '^[a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+$'
+ *                   readOnly: true
+ *                 expiresIn:
+ *                   type: string
+ *                   pattern: '^(0|[1-9][0-9]{0,9})(ms|[dhmswy])$'
+ *       401:
+ *         description: Error por fallo en la verificación de credenciales.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/error'
+ *       404:
+ *         description: Error por camper no encontrado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/error'
+ *       500:
+ *         description: Error interno del servidor.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/error'
+ */
+
 campers.post(`/login`, (req, res) => camperController.login(req, res));
 
 /**
  * @swagger
- * /campers/continue:
+ * /campers/continue/{id}:
  *   patch:
- *     summary: Continúa con el registro de campers/estudiantes 'En proceso de ingreso'
+ *     summary: Continúa con el registro de campers 'En proceso de ingreso'.
  *     tags: [campers]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID del camper.
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-fA-F0-9]{24}$'
  *     requestBody:
  *       required: true
  *       content:
@@ -413,22 +615,48 @@ campers.post(`/login`, (req, res) => camperController.login(req, res));
  *             $ref: '#/components/schemas/registrationContinuationCamper'
  *     responses:
  *       200:
- *         description: El camper/estudiante actualizado con los nuevos datos ingresados.
+ *         description: El camper actualizado con los nuevos datos ingresados.
  *         headers:
  *           Location:
  *             description: URL del camper registrado.
  *             schema:
  *               type: string
  *               format: uri-reference
- *             example: /campers/1
+ *             example: /campers/60d1e6c2a7b3b9d6c7a5b8a0
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/camper'
+ *               type: object
+ *               required:
+ *                 - msg
+ *                 - response
+ *                 - data
+ *               properties:
+ *                 msg:
+ *                   $ref: '#/components/schemas/message'
+ *                 response:
+ *                   type: object
+ *                   required:
+ *                     - acknowledged
+ *                     - matchedCount
+ *                     - modifiedCount
+ *                   properties:
+ *                     acknowledged:
+ *                       type: boolean
+ *                     matchedCount:
+ *                       type: integer
+ *                       minimum: 0
+ *                       maximum: 1
+ *                     modifiedCount:
+ *                       type: integer
+ *                       minimum: 0
+ *                       maximum: 1
+ *                 data:
+ *                   $ref: '#/components/schemas/publicCamper'
  *         links:
  *           GetCamperById:
- *             description: Retorna el camper/estudiante actualizado.
- *             operationId: getByParamsId
+ *             description: Retorna el camper actualizado.
+ *             operationId: findById
  *             parameters:
  *               id: '$response.body#/_id'
  *       400:
@@ -438,13 +666,13 @@ campers.post(`/login`, (req, res) => camperController.login(req, res));
  *             schema:
  *               $ref: '#/components/schemas/error'
  *       404:
- *         description: Error por camper/estudiante no encontrado.
+ *         description: Error por camper no encontrado.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/error'
  *       500:
- *         description: Error de base de datos.
+ *         description: Error interno del servidor.
  *         content:
  *           application/json:
  *             schema:
